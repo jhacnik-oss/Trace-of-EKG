@@ -148,6 +148,15 @@ body::before {
 }
 .nav__link:hover { color: var(--fg); background: var(--card); }
 .nav__link--on { color: var(--fg); background: var(--card-2); }
+.nav__darkmode {
+  background: none; border: 1px solid var(--line);
+  color: var(--fg-dim); font-size: 16px;
+  width: 34px; height: 34px; border-radius: 50%;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  margin-left: 6px;
+  transition: color .15s, background .15s, border-color .15s;
+}
+.nav__darkmode:hover { color: var(--fg); background: var(--card); border-color: var(--fg-dim); }
 
 /* ═══════════════════════════════════════════════════════════
    HERO — the live-EKG centerpiece

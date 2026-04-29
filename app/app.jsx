@@ -72,6 +72,14 @@ function App() {
           <button className={`nav__link ${route === 'archive' ? 'nav__link--on' : ''}`} onClick={() => go('archive')}>Archive</button>
           <button className={`nav__link ${route === 'submit' ? 'nav__link--on' : ''}`} onClick={() => go('submit')}>Submit</button>
           <button className={`nav__link ${route === 'admin' ? 'nav__link--on' : ''}`} onClick={() => go('admin')}>Admin</button>
+          <button
+            className="nav__darkmode"
+            onClick={() => patchTweak('dark', !tweaks.dark)}
+            title={tweaks.dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={tweaks.dark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {tweaks.dark ? '☀' : '☾'}
+          </button>
         </div>
       </nav>
 

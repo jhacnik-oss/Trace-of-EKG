@@ -313,8 +313,7 @@ function IdleHero({ lesson, dark = false }) {
           A Trace of <span className="idle__title-accent">EKG</span>
         </h1>
         <p className="idle__lede">
-          Five minutes. One real EKG. We open it for thirty seconds, take your read, then
-          unpack the answer together — with the differential, the pitfalls, and what to do at 3 a.m.
+          A weekly microteaching lecture series on emergency EKGs.
         </p>
         <div className="idle__ctarow">
           <a className="btn btn--primary" href="#archive">Browse the archive →</a>
@@ -332,10 +331,9 @@ function IdleHero({ lesson, dark = false }) {
       <div className="idle__rail">
         <div className="idle__cell">
           <div className="idle__cellnum">01</div>
-          <div className="idle__celltitle">30-second read.</div>
+          <div className="idle__celltitle">Real-Time Interpretation.</div>
           <div className="idle__cellbody">
-            Tuesdays at noon, the week's tracing goes live for thirty seconds.
-            Type your read, see the room's, then the teaching.
+            Weekly didactic lectures with interactive EKG interpretation.
           </div>
         </div>
         <div className="idle__cell">

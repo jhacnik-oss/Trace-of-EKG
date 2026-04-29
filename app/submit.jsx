@@ -99,7 +99,7 @@ function SubmitPage({ state, setState }) {
         <div className="submit__grid">
           <label className="submit__field">
             <span className="submit__lab">Your name</span>
-            <input value={form.name} onChange={(e) => patch({ name: e.target.value })} placeholder="Dr. Jane Morgan" />
+            <input value={form.name} onChange={(e) => patch({ name: e.target.value })} placeholder="Dr. Michael A Miller" />
           </label>
           <label className="submit__field">
             <span className="submit__lab">Email</span>

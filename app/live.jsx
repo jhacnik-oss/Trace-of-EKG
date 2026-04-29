@@ -310,7 +310,7 @@ function IdleHero({ lesson, dark = false }) {
           <span>WEEKLY EKG TEACHING</span>
         </div>
         <h1 className="idle__title">
-          A <em>Trace</em> of <span className="idle__title-accent">EKG</span>
+          A Trace of <span className="idle__title-accent">EKG</span>
         </h1>
         <p className="idle__lede">
           Five minutes. One real EKG. We open it for thirty seconds, take your read, then

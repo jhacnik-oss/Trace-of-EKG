@@ -117,7 +117,7 @@
 }
 .idle__title-accent {
   color: var(--accent);
-  font-style: italic;
+  font-style: normal;
   position: relative;
   display: inline-block;
 }

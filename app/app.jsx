@@ -1,12 +1,13 @@
 // App shell — nav, routing, tweaks panel.
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "palette": "indigo",
+  "palette": "paper",
   "typography": "display",
   "timer": "ring",
   "archive": "by-topic",
-  "dark": true
+  "dark": false
 }/*EDITMODE-END*/;
+const TWEAK_KEY = 'ekg-tweaks-v2'; // bumped to reset cached dark-mode preference
 
 const PALETTES = {
   indigo: 'indigo',
@@ -19,7 +20,7 @@ function App() {
   const [state, setState] = useAppState();
   const [route, setRoute] = React.useState(() => location.hash.replace('#', '') || 'home');
   const [tweaks, setTweaks] = React.useState(() => {
-    try { return { ...TWEAK_DEFAULTS, ...(JSON.parse(localStorage.getItem('ekg-tweaks') || '{}')) }; }
+    try { return { ...TWEAK_DEFAULTS, ...(JSON.parse(localStorage.getItem(TWEAK_KEY) || '{}')) }; }
     catch { return TWEAK_DEFAULTS; }
   });
   const [tweaksOpen, setTweaksOpen] = React.useState(false);
@@ -35,7 +36,7 @@ function App() {
     d.setAttribute('data-theme', tweaks.palette === 'indigo' ? '' : tweaks.palette);
     d.setAttribute('data-typography', tweaks.typography);
     d.setAttribute('data-mode', tweaks.dark ? 'dark' : 'light');
-    localStorage.setItem('ekg-tweaks', JSON.stringify(tweaks));
+    localStorage.setItem(TWEAK_KEY, JSON.stringify(tweaks));
   }, [tweaks]);
 
   // Tweaks protocol
@@ -75,10 +76,9 @@ function App() {
           <button
             className="nav__darkmode"
             onClick={() => patchTweak('dark', !tweaks.dark)}
-            title={tweaks.dark ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-label={tweaks.dark ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            {tweaks.dark ? '☀' : '☾'}
+            {tweaks.dark ? '☀ Light' : '☾ Dark'}
           </button>
         </div>
       </nav>

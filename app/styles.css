@@ -149,14 +149,22 @@ body::before {
 .nav__link:hover { color: var(--fg); background: var(--card); }
 .nav__link--on { color: var(--fg); background: var(--card-2); }
 .nav__darkmode {
-  background: none; border: 1px solid var(--line);
-  color: var(--fg-dim); font-size: 16px;
-  width: 34px; height: 34px; border-radius: 50%;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  margin-left: 6px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--fg-dim);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  margin-left: 8px;
+  letter-spacing: 0.01em;
   transition: color .15s, background .15s, border-color .15s;
+  white-space: nowrap;
 }
-.nav__darkmode:hover { color: var(--fg); background: var(--card); border-color: var(--fg-dim); }
+.nav__darkmode:hover { color: var(--fg); border-color: var(--fg-dim); background: var(--card-2); }
 
 /* ═══════════════════════════════════════════════════════════
    HERO — the live-EKG centerpiece

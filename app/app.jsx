@@ -85,7 +85,7 @@ function App() {
 
       {route === 'home' && (
         <>
-          <LiveHero state={state} setState={setState} timerVariant={tweaks.timer} />
+          <LiveHero state={state} setState={setState} timerVariant={tweaks.timer} dark={tweaks.dark} />
           <Archive state={state} layout={tweaks.archive} />
         </>
       )}

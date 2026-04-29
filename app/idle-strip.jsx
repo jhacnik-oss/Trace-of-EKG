@@ -65,7 +65,7 @@
     return { d, width: x };
   }
 
-  function STElevationStrip({ height = 280, speed = 38 }) {
+  function STElevationStrip({ height = 280, speed = 38, dark = false }) {
     // Build one long path; we render it twice end-to-end and translate to scroll.
     const { d, width } = React.useMemo(() => buildBeatPath(8), []);
     const [offset, setOffset] = React.useState(0);
@@ -85,33 +85,32 @@
       return () => cancelAnimationFrame(raf);
     }, [width, speed]);
 
-    // Compute beat anchor positions in the path so we can place ST-elev callouts.
-    // Each beat occupies "beatW" units; the J-point sits at a known offset.
-    const beatW = width / 8;
-    // Approximate offset within a beat where J-point lives:
-    // TP(8) + P-bezier midpoint (~2.5/2) + PR(1.5) + Q(0.4) + R(0.5) + S(0.6) ≈ 11.6 mm * MM
-    const jOffsetInBeat = 11.6 * MM;
-
-    const stripWidth = width * 2; // tiled
+    // Colors: dark mode = red trace on black; light mode = dark trace on cream paper
+    const bg         = dark ? '#000'                    : '#f4ead6';
+    const traceColor = dark ? '#ff4d5e'                 : '#1a1310';
+    const glowFilter = dark ? 'drop-shadow(0 0 3px #ff4d5e)' : 'drop-shadow(0 0 0.6px #1a1310)';
+    const gridSmSm   = dark ? 'rgba(255,77,94,0.10)'   : 'rgba(200,53,77,0.18)';
+    const gridLgSm   = dark ? 'rgba(255,77,94,0.25)'   : 'rgba(200,53,77,0.42)';
+    const baseline   = dark ? 'rgba(255,77,94,0.18)'   : 'rgba(120,30,50,0.18)';
 
     return (
-      <div className="stemi" aria-label="Animated rhythm strip showing ST-segment elevation">
+      <div className="stemi" style={{ background: bg }} aria-label="Animated rhythm strip">
         <svg
           viewBox={`0 0 ${VB_W} ${VB_H}`}
           width="100%"
           height={height}
           preserveAspectRatio="none"
           className="stemi__svg"
+          style={{ background: bg }}
         >
           <defs>
-            {/* ECG paper: warm cream with red 1mm/5mm grid */}
             <pattern id="stemi-grid-sm" width={MM} height={MM} patternUnits="userSpaceOnUse">
               <rect width={MM} height={MM} fill="transparent" />
-              <path d={`M${MM} 0H0V${MM}`} fill="none" stroke="rgba(200,53,77,0.18)" strokeWidth="0.4" />
+              <path d={`M${MM} 0H0V${MM}`} fill="none" stroke={gridSmSm} strokeWidth="0.4" />
             </pattern>
             <pattern id="stemi-grid-lg" width={MM * 5} height={MM * 5} patternUnits="userSpaceOnUse">
               <rect width={MM * 5} height={MM * 5} fill="url(#stemi-grid-sm)" />
-              <path d={`M${MM * 5} 0H0V${MM * 5}`} fill="none" stroke="rgba(200,53,77,0.42)" strokeWidth="0.7" />
+              <path d={`M${MM * 5} 0H0V${MM * 5}`} fill="none" stroke={gridLgSm} strokeWidth="0.7" />
             </pattern>
             <linearGradient id="stemi-fade" x1="0" x2="1" y1="0" y2="0">
               <stop offset="0" stopColor="var(--bg)" stopOpacity="1" />
@@ -121,22 +120,23 @@
             </linearGradient>
           </defs>
 
-          {/* paper */}
+          {/* background + grid */}
+          <rect width={VB_W} height={VB_H} fill={bg} />
           <rect width={VB_W} height={VB_H} fill="url(#stemi-grid-lg)" />
 
-          {/* baseline reference (very faint) */}
+          {/* baseline reference */}
           <line x1="0" x2={VB_W} y1={BASELINE} y2={BASELINE}
-            stroke="rgba(120,30,50,0.18)" strokeWidth="0.4" strokeDasharray="2 3" />
+            stroke={baseline} strokeWidth="0.4" strokeDasharray="2 3" />
 
           {/* The trace, tiled */}
           <g transform={`translate(${-offset},0)`}>
-            <path d={d} fill="none" stroke="#1a1310" strokeWidth="1.6"
+            <path d={d} fill="none" stroke={traceColor} strokeWidth="1.6"
               strokeLinejoin="round" strokeLinecap="round"
-              style={{ filter: 'drop-shadow(0 0 0.6px #1a1310)' }} />
+              style={{ filter: glowFilter }} />
             <path d={d} transform={`translate(${width},0)`}
-              fill="none" stroke="#1a1310" strokeWidth="1.6"
+              fill="none" stroke={traceColor} strokeWidth="1.6"
               strokeLinejoin="round" strokeLinecap="round"
-              style={{ filter: 'drop-shadow(0 0 0.6px #1a1310)' }} />
+              style={{ filter: glowFilter }} />
           </g>
 
           {/* edge fades */}

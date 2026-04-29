@@ -114,7 +114,7 @@ function WordCloud({ responses, accent = 'var(--accent)' }) {
 }
 
 // ─── Live section (main hero) ───────────────────────────────
-function LiveHero({ state, setState, timerVariant = 'ring' }) {
+function LiveHero({ state, setState, timerVariant = 'ring', dark = false }) {
   const lesson = state.liveLesson;
   const duration = lesson.duration ?? LIVE_DURATION_S;
   const { remaining, openEnded } = useCountdown(lesson.liveStartedAt, duration);
@@ -150,7 +150,7 @@ function LiveHero({ state, setState, timerVariant = 'ring' }) {
 
   // Idle phase (waiting for admin to start)
   if (!lesson.liveStartedAt) {
-    return <IdleHero lesson={lesson} />;
+    return <IdleHero lesson={lesson} dark={dark} />;
   }
 
   // Live phase
@@ -277,7 +277,7 @@ function RevealAndTeach({ lesson, state, setState }) {
   );
 }
 
-function IdleHero({ lesson }) {
+function IdleHero({ lesson, dark = false }) {
   const week = String(lesson.week).padStart(2, '0');
   const topic = lesson.topic || 'ischemia';
   const next = lesson.nextLiveAt ? new Date(lesson.nextLiveAt) : null;
@@ -300,7 +300,7 @@ function IdleHero({ lesson }) {
     <section className="hero hero--idle2">
       {/* Strip is the centerpiece — full bleed */}
       <div className="idle__strip">
-        <STElevationStrip height={300} speed={42} />
+        <STElevationStrip height={300} speed={42} dark={dark} />
       </div>
 
       {/* Headline + lede in an asymmetric grid */}

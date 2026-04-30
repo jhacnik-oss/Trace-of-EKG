@@ -72,16 +72,10 @@ function GuestPage({ state, setState }) {
             <span>Title</span>
             <input value={draft.title} onChange={(e) => patch({ title: e.target.value })} />
           </label>
-          <div className="admin__row2">
-            <label className="admin__field">
-              <span>Week #</span>
-              <input type="number" value={draft.week} onChange={(e) => patch({ week: +e.target.value })} />
-            </label>
-            <label className="admin__field">
-              <span>Date</span>
-              <input type="date" value={draft.date} onChange={(e) => patch({ date: e.target.value })} />
-            </label>
-          </div>
+          <label className="admin__field">
+            <span>Date</span>
+            <input type="date" value={draft.date} onChange={(e) => patch({ date: e.target.value })} />
+          </label>
           <label className="admin__field">
             <span>Topic</span>
             <select value={draft.topic} onChange={(e) => patch({ topic: e.target.value })}>

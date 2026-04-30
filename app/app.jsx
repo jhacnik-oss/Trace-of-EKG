@@ -72,8 +72,7 @@ function App() {
           <button className={`nav__link ${route === 'home' ? 'nav__link--on' : ''}`} onClick={() => go('home')}>Live</button>
           <button className={`nav__link ${route === 'archive' ? 'nav__link--on' : ''}`} onClick={() => go('archive')}>Archive</button>
           <button className={`nav__link ${route === 'submit' ? 'nav__link--on' : ''}`} onClick={() => go('submit')}>Submit</button>
-          <button className={`nav__link ${route === 'admin' ? 'nav__link--on' : ''}`} onClick={() => go('admin')}>Admin</button>
-          <button className={`nav__link ${route === 'guest' ? 'nav__link--on' : ''}`} onClick={() => go('guest')}>Guest</button>
+          <button className={`nav__link ${route === 'lecture' ? 'nav__link--on' : ''}`} onClick={() => go('lecture')}>Lecture</button>
           <button
             className="nav__darkmode"
             onClick={() => patchTweak('dark', !tweaks.dark)}
@@ -93,11 +92,12 @@ function App() {
       {route === 'archive' && <Archive state={state} layout={tweaks.archive} />}
       {route === 'submit' && <SubmitPage state={state} setState={setState} />}
       {route === 'admin' && <AdminPage state={state} setState={setState} />}
-      {route === 'guest' && <GuestPage state={state} setState={setState} />}
+      {route === 'lecture' && <GuestPage state={state} setState={setState} />}
 
       <footer className="footer">
         <div>TRACE OF EKG · WEEKLY · FIVE MINUTES</div>
         <div>© 2026 · HACNIK </div>
+        <button className="footer__admin" onClick={() => go('admin')}>admin</button>
       </footer>
 
       {tweaksOpen && <TweaksPanel tweaks={tweaks} patch={patchTweak} onClose={() => { setTweaksOpen(false); window.parent.postMessage({ type: '__deactivate_edit_mode' }, '*'); }} />}

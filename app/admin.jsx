@@ -44,8 +44,12 @@ function AdminPage({ state, setState }) {
         <button className="btn btn--ghost" onClick={() => { sessionStorage.removeItem('ekg-admin-auth'); setAuth(false); }}>Sign out</button>
       </div>
       <div className="admin__tabs">
-        {['this-week', 'live-stream', 'submissions', 'schedule', 'archive', 'topics'].map((t) => {
-          const count = t === 'submissions' ? (state.submissions || []).filter((x) => x.status === 'new').length : 0;
+        {['this-week', 'live-stream', 'approvals', 'submissions', 'schedule', 'archive', 'topics'].map((t) => {
+          const count = t === 'submissions'
+            ? (state.submissions || []).filter((x) => x.status === 'new').length
+            : t === 'approvals'
+            ? (state.pendingLessons || []).length
+            : 0;
           return (
             <button key={t} className={`admin__tab ${tab === t ? 'admin__tab--on' : ''}`} onClick={() => setTab(t)}>
               {t.replace('-', ' ')}
@@ -57,6 +61,7 @@ function AdminPage({ state, setState }) {
 
       {tab === 'this-week' && <ThisWeekPanel state={state} setState={setState} />}
       {tab === 'live-stream' && <LiveStreamPanel state={state} setState={setState} />}
+      {tab === 'approvals' && <ApprovalsPanel state={state} setState={setState} />}
       {tab === 'submissions' && <SubmissionsPanel state={state} setState={setState} />}
       {tab === 'schedule' && <SchedulePanel state={state} setState={setState} />}
       {tab === 'archive' && <ArchiveAdminPanel state={state} setState={setState} />}
@@ -455,4 +460,92 @@ function TopicsPanel({ state, setState }) {
   );
 }
 
-Object.assign(window, { AdminPage });
+function ApprovalsPanel({ state, setState }) {
+  const pending = state.pendingLessons || [];
+  const [editing, setEditing] = React.useState(null);
+
+  const approve = (lesson) => {
+    const archived = { ...lesson, id: lesson.id.replace('pending-', 'w'), week: lesson.week || state.currentWeek };
+    setState((s) => ({
+      ...s,
+      lessons: [archived, ...s.lessons],
+      pendingLessons: s.pendingLessons.filter((p) => p.id !== lesson.id),
+    }));
+    if (editing?.id === lesson.id) setEditing(null);
+  };
+
+  const reject = (id) => {
+    if (!confirm('Remove this session without archiving?')) return;
+    setState((s) => ({ ...s, pendingLessons: s.pendingLessons.filter((p) => p.id !== id) }));
+    if (editing?.id === id) setEditing(null);
+  };
+
+  if (pending.length === 0) {
+    return <div className="admin__empty">No sessions pending review. Guest lecturers will appear here after they submit.</div>;
+  }
+
+  if (editing) {
+    return (
+      <div className="admin__col">
+        <div className="hero__label" style={{ marginBottom: 12 }}>Editing pending session</div>
+        <label className="admin__field"><span>Title</span>
+          <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></label>
+        <label className="admin__field"><span>Topic</span>
+          <select value={editing.topic} onChange={(e) => setEditing({ ...editing, topic: e.target.value })}>
+            {state.topics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select></label>
+        <label className="admin__field"><span>The read</span>
+          <textarea rows={3} value={editing.answer} onChange={(e) => setEditing({ ...editing, answer: e.target.value })} /></label>
+        <label className="admin__field"><span>Teaching points (one per line)</span>
+          <textarea rows={6} value={(editing.bullets || []).join('\n')} onChange={(e) => setEditing({ ...editing, bullets: e.target.value.split('\n') })} /></label>
+        <div className="admin__actions">
+          <button className="btn btn--ghost" onClick={() => setEditing(null)}>Cancel</button>
+          <button className="btn btn--primary" onClick={() => approve(editing)}>Approve & archive →</button>
+          <button className="btn btn--danger" onClick={() => reject(editing.id)}>Reject</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="admin__streamhead">
+        <h3 className="admin__sub2">Pending guest sessions ({pending.length})</h3>
+      </div>
+      <ul className="admin__sublist">
+        {pending.map((lesson) => {
+          const topic = state.topics.find((t) => t.id === lesson.topic);
+          return (
+            <li key={lesson.id} className="admin__subitem">
+              <div className="admin__subthumb">
+                <LessonMedia lesson={lesson} height={80} grid={false} color="var(--accent)" />
+              </div>
+              <div className="admin__submeta">
+                <div className="admin__subtitle">{lesson.title || <em style={{ color: 'var(--fg-faint)' }}>Untitled</em>}</div>
+                <div className="admin__subwho" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="chip__dot" style={{ background: topic?.color }} />
+                  {topic?.name}
+                </div>
+                <div className="admin__substamp">
+                  {lesson.responses?.length || 0} responses · submitted {new Date(lesson.pendingAt).toLocaleString()}
+                </div>
+                {lesson.responses?.length > 0 && (
+                  <div className="admin__subnotes">
+                    {lesson.responses.slice(0, 5).join(' · ')}{lesson.responses.length > 5 ? ' …' : ''}
+                  </div>
+                )}
+              </div>
+              <div className="admin__subactions">
+                <button className="btn btn--ghost btn--sm" onClick={() => setEditing(lesson)}>Edit & review</button>
+                <button className="btn btn--primary btn--sm" onClick={() => approve(lesson)}>Approve →</button>
+                <button className="btn btn--danger btn--sm" onClick={() => reject(lesson.id)}>Reject</button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+Object.assign(window, { AdminPage, ApprovalsPanel });

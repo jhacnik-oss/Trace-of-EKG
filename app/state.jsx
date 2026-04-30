@@ -206,6 +206,7 @@ const DEFAULT_STATE = {
   lessons: SEED_LESSONS,
   schedule: [], // future weeks: [{ date, title, topic, question, answer, bullets }]
   submissions: [], // user-submitted EKGs: { id, submittedAt, name, email, title, notes, topic, imageData, pdfData, status }
+  pendingLessons: [], // guest-run sessions awaiting admin approval before archive
   topics: TOPICS,
 };
 

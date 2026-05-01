@@ -208,6 +208,8 @@ const DEFAULT_STATE = {
   submissions: [], // user-submitted EKGs: { id, submittedAt, name, email, title, notes, topic, imageData, pdfData, status }
   pendingLessons: [], // guest-run sessions awaiting admin approval before archive
   topics: TOPICS,
+  drafts: [],   // admin-saved lecture drafts: [{ id, title, topic, date, question, answer, bullets, imageData, pdfData, imageUrl, duration, savedAt }]
+  invites: [],  // guest invite links: [{ id, presenterName, presenterEmail, topic, date, url, createdAt }]
 };
 
 function loadState() {

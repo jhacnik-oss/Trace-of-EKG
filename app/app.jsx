@@ -16,9 +16,22 @@ const PALETTES = {
   acid: 'acid',
 };
 
+function parseRoute(hash) {
+  const h = (hash || '').replace(/^#/, '');
+  const qi = h.indexOf('?');
+  if (qi === -1) return { route: h || 'home', params: {} };
+  const params = {};
+  h.slice(qi + 1).split('&').forEach((pair) => {
+    const ei = pair.indexOf('=');
+    if (ei < 0) return;
+    try { params[decodeURIComponent(pair.slice(0, ei))] = decodeURIComponent(pair.slice(ei + 1).replace(/\+/g, ' ')); } catch {}
+  });
+  return { route: h.slice(0, qi) || 'home', params };
+}
+
 function App() {
   const [state, setState] = useAppState();
-  const [route, setRoute] = React.useState(() => location.hash.replace('#', '') || 'home');
+  const [{ route, params }, setRouteState] = React.useState(() => parseRoute(location.hash));
   const [tweaks, setTweaks] = React.useState(() => {
     try { return { ...TWEAK_DEFAULTS, ...(JSON.parse(localStorage.getItem(TWEAK_KEY) || '{}')) }; }
     catch { return TWEAK_DEFAULTS; }
@@ -26,7 +39,7 @@ function App() {
   const [tweaksOpen, setTweaksOpen] = React.useState(false);
 
   React.useEffect(() => {
-    const r = () => setRoute(location.hash.replace('#', '') || 'home');
+    const r = () => setRouteState(parseRoute(location.hash));
     window.addEventListener('hashchange', r);
     return () => window.removeEventListener('hashchange', r);
   }, []);
@@ -60,7 +73,7 @@ function App() {
     });
   };
 
-  const go = (r) => { location.hash = r; setRoute(r); };
+  const go = (r) => { location.hash = r; setRouteState(parseRoute(r)); };
 
   return (
     <div className="page">
@@ -93,6 +106,7 @@ function App() {
       {route === 'submit' && <SubmitPage state={state} setState={setState} />}
       {route === 'admin' && <AdminPage state={state} setState={setState} />}
       {route === 'lecture' && <GuestPage state={state} setState={setState} />}
+      {route === 'draft' && <DraftPage state={state} setState={setState} params={params} />}
 
       <footer className="footer">
         <div>TRACE OF EKG · WEEKLY · FIVE MINUTES</div>
@@ -176,4 +190,4 @@ function TweaksPanel({ tweaks, patch, onClose }) {
   );
 }
 
-Object.assign(window, { App, TweaksPanel, Logo, TWEAK_DEFAULTS });
+Object.assign(window, { App, TweaksPanel, Logo, TWEAK_DEFAULTS, parseRoute });

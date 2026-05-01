@@ -44,7 +44,7 @@ function AdminPage({ state, setState }) {
         <button className="btn btn--ghost" onClick={() => { sessionStorage.removeItem('ekg-admin-auth'); setAuth(false); }}>Sign out</button>
       </div>
       <div className="admin__tabs">
-        {['this-week', 'live-stream', 'approvals', 'submissions', 'schedule', 'archive', 'topics'].map((t) => {
+        {['this-week', 'live-stream', 'drafts', 'invites', 'approvals', 'submissions', 'schedule', 'archive', 'topics'].map((t) => {
           const count = t === 'submissions'
             ? (state.submissions || []).filter((x) => x.status === 'new').length
             : t === 'approvals'
@@ -61,6 +61,8 @@ function AdminPage({ state, setState }) {
 
       {tab === 'this-week' && <ThisWeekPanel state={state} setState={setState} />}
       {tab === 'live-stream' && <LiveStreamPanel state={state} setState={setState} />}
+      {tab === 'drafts' && <DraftsPanel state={state} setState={setState} />}
+      {tab === 'invites' && <InvitesPanel state={state} setState={setState} />}
       {tab === 'approvals' && <ApprovalsPanel state={state} setState={setState} />}
       {tab === 'submissions' && <SubmissionsPanel state={state} setState={setState} />}
       {tab === 'schedule' && <SchedulePanel state={state} setState={setState} />}
@@ -548,4 +550,308 @@ function ApprovalsPanel({ state, setState }) {
   );
 }
 
-Object.assign(window, { AdminPage, ApprovalsPanel });
+// ─── Drafts panel — admin saves lecture drafts to load later ──────────────────
+
+function DraftEditForm({ draft: initialDraft, state, onSave, onCancel }) {
+  const [d, setD] = React.useState(initialDraft);
+  const patch = (p) => setD((x) => ({ ...x, ...p }));
+  return (
+    <div className="admin__col">
+      <div className="hero__label" style={{ marginBottom: 12 }}>
+        {initialDraft.savedAt ? 'Edit draft' : 'New draft'}
+      </div>
+      <label className="admin__field"><span>Title</span>
+        <input value={d.title} onChange={(e) => patch({ title: e.target.value })} placeholder="e.g. Wellens' Syndrome" /></label>
+      <div className="admin__row2">
+        <label className="admin__field"><span>Date</span>
+          <input type="date" value={d.date} onChange={(e) => patch({ date: e.target.value })} /></label>
+        <label className="admin__field"><span>Topic</span>
+          <select value={d.topic} onChange={(e) => patch({ topic: e.target.value })}>
+            {state.topics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select></label>
+      </div>
+      <label className="admin__field"><span>Question</span>
+        <input value={d.question} onChange={(e) => patch({ question: e.target.value })} /></label>
+      <label className="admin__field">
+        <span>EKG image or PDF</span>
+        <div className="admin__upload">
+          <input type="file" accept="image/*,application/pdf" onChange={async (e) => {
+            const f = e.target.files?.[0]; if (!f) return;
+            const data = await fileToDataURL(f);
+            if (f.type === 'application/pdf') patch({ pdfData: data, imageData: null, imageUrl: '' });
+            else patch({ imageData: data, pdfData: null, imageUrl: '' });
+          }} />
+          {(d.imageData || d.pdfData || d.imageUrl) && (
+            <button type="button" className="btn btn--ghost btn--sm"
+              onClick={() => patch({ imageData: null, pdfData: null, imageUrl: '' })}>Clear</button>
+          )}
+          <span className="admin__uploadhint">
+            {d.pdfData ? 'PDF attached' : d.imageData ? 'Image attached' : d.imageUrl || 'No image'}
+          </span>
+        </div>
+      </label>
+      <label className="admin__field"><span>…or image URL</span>
+        <input value={d.imageUrl || ''} onChange={(e) => patch({ imageUrl: e.target.value, imageData: null, pdfData: null })} placeholder="https://…" /></label>
+      <label className="admin__field"><span>The read (answer)</span>
+        <textarea rows={3} value={d.answer} onChange={(e) => patch({ answer: e.target.value })} /></label>
+      <label className="admin__field"><span>Teaching points (one per line)</span>
+        <textarea rows={5} value={(d.bullets || []).join('\n')} onChange={(e) => patch({ bullets: e.target.value.split('\n') })} /></label>
+      <div className="admin__actions">
+        <button className="btn btn--ghost" onClick={onCancel}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(d)}>Save draft</button>
+      </div>
+    </div>
+  );
+}
+
+function DraftsPanel({ state, setState }) {
+  const drafts = state.drafts || [];
+  const [editing, setEditing] = React.useState(null);
+  const [isNew, setIsNew] = React.useState(false);
+
+  const blankDraft = () => ({
+    id: 'draft-' + Date.now().toString(36),
+    title: '',
+    topic: state.topics[0]?.id || '',
+    date: '',
+    question: 'Interpret this EKG',
+    answer: '',
+    bullets: [],
+    imageData: null,
+    pdfData: null,
+    imageUrl: '',
+    duration: 30,
+    savedAt: null,
+  });
+
+  const saveDraft = (d) => {
+    const updated = { ...d, savedAt: Date.now() };
+    setState((s) => {
+      const exists = s.drafts.find((x) => x.id === d.id);
+      return {
+        ...s,
+        drafts: exists
+          ? s.drafts.map((x) => x.id === d.id ? updated : x)
+          : [updated, ...s.drafts],
+      };
+    });
+    setEditing(null);
+    setIsNew(false);
+  };
+
+  const remove = (id) => {
+    if (!confirm('Delete this draft?')) return;
+    setState((s) => ({ ...s, drafts: s.drafts.filter((x) => x.id !== id) }));
+    if (editing?.id === id) setEditing(null);
+  };
+
+  const loadToLive = (d) => {
+    setState((s) => ({
+      ...s,
+      liveLesson: {
+        ...s.liveLesson,
+        title: d.title,
+        topic: d.topic,
+        date: d.date,
+        question: d.question,
+        answer: d.answer,
+        bullets: d.bullets || [],
+        imageData: d.imageData,
+        pdfData: d.pdfData,
+        imageUrl: d.imageUrl || '',
+        duration: d.duration,
+        responses: [],
+        revealed: false,
+        liveStartedAt: null,
+      },
+    }));
+    alert('Draft loaded into "This Week". Open that tab to go live.');
+  };
+
+  if (editing || isNew) {
+    return <DraftEditForm
+      draft={editing || blankDraft()}
+      state={state}
+      onSave={saveDraft}
+      onCancel={() => { setEditing(null); setIsNew(false); }}
+    />;
+  }
+
+  return (
+    <div>
+      <div className="admin__streamhead">
+        <h3 className="admin__sub2">Saved drafts ({drafts.length})</h3>
+        <button className="btn btn--primary" onClick={() => setIsNew(true)}>+ New draft</button>
+      </div>
+      {drafts.length === 0 && (
+        <div className="admin__empty">No drafts yet. Create one to prepare a lecture in advance, then load it when it's time to go live.</div>
+      )}
+      <ul className="admin__sched">
+        {drafts.map((d) => {
+          const topic = state.topics.find((t) => t.id === d.topic);
+          return (
+            <li key={d.id}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600 }}>{d.title || <em style={{ color: 'var(--fg-faint)' }}>Untitled draft</em>}</div>
+                <div style={{ fontSize: 13, opacity: 0.6 }}>
+                  {topic && <span style={{ color: topic.color }}>{topic.name}</span>}
+                  {d.date && ` · ${formatDate(d.date)}`}
+                  {d.savedAt && ` · saved ${new Date(d.savedAt).toLocaleDateString()}`}
+                </div>
+              </div>
+              <button className="btn btn--ghost btn--sm" onClick={() => setEditing(d)}>Edit</button>
+              <button className="btn btn--primary btn--sm" onClick={() => loadToLive(d)}>Load to live →</button>
+              <button className="admin__streamdel" onClick={() => remove(d.id)}>×</button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// ─── Invites panel — generate and send invite links to guest lecturers ─────────
+
+function InvitesPanel({ state, setState }) {
+  const invites = state.invites || [];
+  const [form, setForm] = React.useState({
+    presenterName: '',
+    presenterEmail: '',
+    topic: state.topics[0]?.id || '',
+    date: '',
+  });
+  const [generated, setGenerated] = React.useState(null);
+  const [copied, setCopied] = React.useState('');
+
+  const BASE_URL = `${location.origin}${location.pathname}`;
+
+  const generateInvite = () => {
+    if (!form.presenterName || !form.date) return;
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const qs = `id=${encodeURIComponent(id)}&topic=${encodeURIComponent(form.topic)}&date=${encodeURIComponent(form.date)}&name=${encodeURIComponent(form.presenterName)}`;
+    const url = `${BASE_URL}#draft?${qs}`;
+    const invite = { ...form, id, url, createdAt: new Date().toISOString() };
+    setState((s) => ({ ...s, invites: [invite, ...(s.invites || [])] }));
+    setGenerated(invite);
+    setForm({ presenterName: '', presenterEmail: '', topic: state.topics[0]?.id || '', date: '' });
+  };
+
+  const removeInvite = (id) => {
+    setState((s) => ({ ...s, invites: (s.invites || []).filter((x) => x.id !== id) }));
+    if (generated?.id === id) setGenerated(null);
+  };
+
+  const copyLink = async (url, key) => {
+    try { await navigator.clipboard.writeText(url); } catch { }
+    setCopied(key);
+    setTimeout(() => setCopied(''), 2000);
+  };
+
+  const buildMailto = (inv) => {
+    const topicObj = state.topics.find((t) => t.id === inv.topic);
+    const subject = encodeURIComponent(`Trace of EKG — You're presenting on ${formatDate(inv.date)}`);
+    const body = encodeURIComponent(
+`Hi ${inv.presenterName},
+
+You're invited to present at Trace of EKG on ${formatDate(inv.date)}.
+Topic: ${topicObj?.name || inv.topic}
+
+Prepare your lecture using this link:
+${inv.url}
+
+You can save your progress and return to this link any time before your presentation date. On the day, click Go Live directly from this page.
+
+Questions? Reply to this email.`
+    );
+    return `mailto:${inv.presenterEmail}?subject=${subject}&body=${body}`;
+  };
+
+  return (
+    <div className="admin__grid">
+      <div className="admin__col">
+        <h3 className="admin__sub2">Create invite</h3>
+        <label className="admin__field"><span>Presenter name</span>
+          <input value={form.presenterName} onChange={(e) => setForm({ ...form, presenterName: e.target.value })} placeholder="Dr. Smith" /></label>
+        <label className="admin__field"><span>Presenter email</span>
+          <input type="email" value={form.presenterEmail} onChange={(e) => setForm({ ...form, presenterEmail: e.target.value })} placeholder="email@hospital.edu" /></label>
+        <div className="admin__row2">
+          <label className="admin__field"><span>Presentation date</span>
+            <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></label>
+          <label className="admin__field"><span>Topic</span>
+            <select value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })}>
+              {state.topics.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select></label>
+        </div>
+        <div className="admin__actions">
+          <button className="btn btn--primary" onClick={generateInvite}
+            disabled={!form.presenterName || !form.date}>
+            Generate invite link →
+          </button>
+        </div>
+
+        {generated && (
+          <div style={{
+            marginTop: 24, padding: '20px 24px',
+            border: '1px solid color-mix(in oklch, var(--accent-3) 40%, transparent)',
+            background: 'color-mix(in oklch, var(--accent-3) 6%, transparent)',
+            borderRadius: 2,
+          }}>
+            <div className="hero__label" style={{ marginBottom: 8 }}>
+              Invite generated for {generated.presenterName}
+            </div>
+            <div className="admin__field" style={{ marginBottom: 12 }}>
+              <input readOnly value={generated.url}
+                onClick={(e) => e.target.select()}
+                style={{ fontSize: 12, fontFamily: 'var(--font-mono)' }} />
+            </div>
+            <div className="admin__actions">
+              <button className="btn btn--ghost" onClick={() => copyLink(generated.url, 'generated')}>
+                {copied === 'generated' ? '✓ Copied' : 'Copy link'}
+              </button>
+              {generated.presenterEmail && (
+                <a className="btn btn--primary" href={buildMailto(generated)} target="_blank" rel="noopener">
+                  Open in email →
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="admin__col">
+        <h3 className="admin__sub2">Sent invites ({invites.length})</h3>
+        {invites.length === 0 && <div className="admin__empty">No invites yet.</div>}
+        <ul className="admin__sched">
+          {invites.map((inv) => {
+            const topic = state.topics.find((t) => t.id === inv.topic);
+            const isExpired = inv.date && new Date(inv.date) < new Date(new Date().toDateString());
+            return (
+              <li key={inv.id}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {inv.presenterName}
+                    {isExpired && <span style={{ fontSize: 11, opacity: 0.45, fontWeight: 400 }}>expired</span>}
+                  </div>
+                  <div style={{ fontSize: 13, opacity: 0.6 }}>
+                    {formatDate(inv.date)}
+                    {topic && <> · <span style={{ color: topic.color }}>{topic.name}</span></>}
+                    {inv.presenterEmail && <> · {inv.presenterEmail}</>}
+                  </div>
+                </div>
+                <button className="btn btn--ghost btn--sm" onClick={() => copyLink(inv.url, inv.id)}>
+                  {copied === inv.id ? '✓' : 'Copy'}
+                </button>
+                {inv.presenterEmail && (
+                  <a className="btn btn--ghost btn--sm" href={buildMailto(inv)} target="_blank" rel="noopener">Email</a>
+                )}
+                <button className="admin__streamdel" onClick={() => removeInvite(inv.id)}>×</button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window, { AdminPage, ApprovalsPanel, DraftsPanel, InvitesPanel });

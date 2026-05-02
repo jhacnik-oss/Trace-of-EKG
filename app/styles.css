@@ -537,7 +537,7 @@ body::before {
 .archive__list { list-style: none; padding: 0; margin: 0; }
 .archive__row {
   display: grid;
-  grid-template-columns: 60px 1fr 260px 140px;
+  grid-template-columns: 1fr 220px 110px;
   gap: 20px;
   align-items: center;
   padding: 18px 8px;
@@ -1217,4 +1217,76 @@ body::before {
   --font-display: "Space Grotesk", "Helvetica Neue", sans-serif;
   --font-body: "Space Grotesk", "Helvetica Neue", sans-serif;
   --font-mono: "Space Mono", ui-monospace, monospace;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE — residents on phones during live
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  /* Nav — compact, drop dark toggle (residents don't need it) */
+  .nav { padding: 12px 20px; }
+  .nav__link { padding: 7px 10px; font-size: 13px; }
+  .nav__darkmode { display: none; }
+
+  /* Global horizontal padding */
+  .wrap { padding: 0 20px; }
+
+  /* Hero — topbar: stack vertically so bar timer gets full width */
+  .hero__topbar { padding: 10px 20px 14px; flex-direction: column; align-items: stretch; gap: 10px; }
+  .hero__status { font-size: 11px; }
+  .hero__timer { width: 100%; }
+
+  /* Hero — trace strip hugs the edges */
+  .hero__trace { margin: 12px -20px 20px; padding: 12px 20px; }
+
+  /* Hero — live phase: single column, tighter */
+  .hero__live-row { padding: 12px 20px 28px; gap: 20px; }
+  .hero__prompt { font-size: clamp(26px, 7vw, 40px); }
+  .hero__label { margin-bottom: 6px; }
+
+  /* Form — stack name + button vertically so button is full-width */
+  .hero__textarea { font-size: 18px; }
+  .hero__formrow { flex-direction: column; align-items: stretch; }
+  .hero__nameinput { width: 100%; }
+  .btn { font-size: 15px; padding: 14px 20px; }
+  .hero__submitted { padding: 16px 18px; }
+
+  /* Hero — reveal */
+  .hero__reveal { padding: 12px 20px 36px; }
+  .hero__cloud { min-height: 200px; padding: 20px 6px; margin: 16px 0 20px; }
+  .hero__answer { padding: 16px 18px; }
+  .hero__answertext { font-size: 20px; }
+
+  /* Hero — teach */
+  .hero__teach { padding: 12px 20px 40px; gap: 28px; }
+  .hero__teachtitle { font-size: clamp(30px, 7vw, 48px); }
+  .hero__bullets li { font-size: 15px; }
+
+  /* Archive */
+  .archive { padding: 40px 20px; }
+  .archive__head { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .archive__filters { justify-content: flex-start; max-width: none; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .chip { white-space: nowrap; }
+
+  /* Archive list — hide topic col on mobile, just title + date */
+  .archive__row { grid-template-columns: 1fr auto; gap: 12px; padding: 14px 6px; }
+  .archive__topic { display: none; }
+  .archive__rowtitle { font-size: 17px; }
+
+  /* Modal */
+  .modal { padding: 12px 12px; align-items: flex-end; }
+  .modal__card { padding: 24px 20px; border-radius: 4px 4px 0 0; max-height: 92vh; overflow-y: auto; }
+  .modal__title { font-size: clamp(28px, 7vw, 44px); }
+  .modal__trace { margin: 20px 0; }
+
+  /* Submit */
+  .submit { padding: 40px 20px 80px; }
+
+  /* Admin — password screen */
+  .admin { padding: 40px 20px; }
+  .admin__login { min-width: 0; width: 100%; padding: 32px 20px; }
+
+  /* Footer */
+  .footer { padding: 28px 20px; flex-direction: column; align-items: flex-start; gap: 10px; }
 }

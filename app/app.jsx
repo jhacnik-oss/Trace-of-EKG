@@ -3,7 +3,7 @@
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "palette": "paper",
   "typography": "display",
-  "timer": "ring",
+  "timer": "bar",
   "archive": "by-topic",
   "dark": false
 }/*EDITMODE-END*/;

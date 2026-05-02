@@ -115,9 +115,11 @@ function WordCloud({ responses, accent = 'var(--accent)' }) {
 }
 
 // ─── Live section (main hero) ───────────────────────────────
-function LiveHero({ state, setState, timerVariant = 'ring', dark = false }) {
+function LiveHero({ state, setState, timerVariant = 'bar', dark = false }) {
   const lesson = state.liveLesson;
   const duration = lesson.duration ?? LIVE_DURATION_S;
+  // Always use bar on mobile — ring is too large for phone viewports.
+  const effectiveVariant = window.innerWidth <= 640 ? 'bar' : timerVariant;
   const { remaining, openEnded } = useCountdown(lesson.liveStartedAt, duration);
   const active = lesson.liveStartedAt && (openEnded || remaining > 0) && !lesson.revealed;
   const expired = !openEnded && lesson.liveStartedAt && remaining <= 0;
@@ -170,7 +172,7 @@ function LiveHero({ state, setState, timerVariant = 'ring', dark = false }) {
               <span className="dot dot--live" style={{ marginRight: 8 }} />Open
             </div>
           ) : (
-            <TimerRing remaining={remaining} total={duration} variant={timerVariant} />
+            <TimerRing remaining={remaining} total={duration} variant={effectiveVariant} />
           )}
         </div>
       </div>

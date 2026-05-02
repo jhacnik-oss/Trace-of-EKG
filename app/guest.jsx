@@ -175,12 +175,18 @@ function GuestPage({ state, setState }) {
             <ul className="admin__stream">
               {live.responses.length === 0
                 ? <li className="admin__empty">No responses yet. Go live to start collecting.</li>
-                : live.responses.map((r, i) => (
-                    <li key={i}>
-                      <span className="admin__streamnum">{String(i + 1).padStart(2, '0')}</span>
-                      <span className="admin__streamtext">{r}</span>
-                    </li>
-                  ))
+                : live.responses.map((r, i) => {
+                    const parts = r.split(' — ');
+                    const text = parts[0];
+                    const name = parts.length > 1 ? parts.slice(1).join(' — ') : null;
+                    return (
+                      <li key={i}>
+                        <span className="admin__streamnum">{String(i + 1).padStart(2, '0')}</span>
+                        <span className="admin__streamtext">{text}</span>
+                        {name && <span className="admin__streamname">{name}</span>}
+                      </li>
+                    );
+                  })
               }
             </ul>
           </div>

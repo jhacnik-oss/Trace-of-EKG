@@ -35,7 +35,7 @@ function DraftPage({ state, setState, params }) {
     );
   }
 
-  const isExpired = inviteDate && new Date(inviteDate) < new Date(new Date().toDateString());
+  const isExpired = inviteDate && inviteDate < new Date().toISOString().slice(0, 10);
 
   if (isExpired) {
     return (
@@ -74,6 +74,17 @@ function DraftPage({ state, setState, params }) {
   });
 
   const patch = (p) => { setDraft((d) => ({ ...d, ...p })); setSaved(false); };
+
+  // Debounced autosave — 3s after last change.
+  React.useEffect(() => {
+    if (!inviteId) return;
+    const t = setTimeout(() => {
+      saveGuestDraft(inviteId, draft);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [draft]);
 
   const save = () => {
     saveGuestDraft(inviteId, draft);
@@ -265,12 +276,18 @@ function DraftPage({ state, setState, params }) {
               <ul className="admin__stream">
                 {live.responses.length === 0
                   ? <li className="admin__empty">No responses yet.</li>
-                  : live.responses.map((r, i) => (
-                      <li key={i}>
-                        <span className="admin__streamnum">{String(i + 1).padStart(2, '0')}</span>
-                        <span className="admin__streamtext">{r}</span>
-                      </li>
-                    ))}
+                  : live.responses.map((r, i) => {
+                      const parts = r.split(' — ');
+                      const text = parts[0];
+                      const name = parts.length > 1 ? parts.slice(1).join(' — ') : null;
+                      return (
+                        <li key={i}>
+                          <span className="admin__streamnum">{String(i + 1).padStart(2, '0')}</span>
+                          <span className="admin__streamtext">{text}</span>
+                          {name && <span className="admin__streamname">{name}</span>}
+                        </li>
+                      );
+                    })}
               </ul>
             </div>
           ) : (

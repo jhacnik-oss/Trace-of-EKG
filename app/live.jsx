@@ -71,7 +71,8 @@ function WordCloud({ responses, accent = 'var(--accent)' }) {
   // Normalize + count.
   const counts = {};
   for (const raw of responses) {
-    const cleaned = raw.trim().toLowerCase()
+    const text = raw.split(' — ')[0]; // strip name if appended
+    const cleaned = text.trim().toLowerCase()
       .replace(/[.,;:!?"'()]/g, '')
       .replace(/\bt wave\b/g, 'T-wave')
       .replace(/\s+/g, ' ');
@@ -139,7 +140,7 @@ function LiveHero({ state, setState, timerVariant = 'ring', dark = false }) {
     e?.preventDefault();
     if (!answer.trim() || submitted) return;
     const entry = name.trim() ? `${answer.trim()} — ${name.trim()}` : answer.trim();
-    setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, responses: [...s.liveLesson.responses, answer.trim()] } }));
+    setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, responses: [...s.liveLesson.responses, entry] } }));
     setSubmitted(true);
   };
 
@@ -159,6 +160,9 @@ function LiveHero({ state, setState, timerVariant = 'ring', dark = false }) {
       <div className="hero__topbar">
         <div className="hero__status">
           <span className="dot dot--live" /> <span>Live · Week {String(lesson.week).padStart(2, '0')}</span>
+          {lesson.responses.length > 0 && (
+            <span style={{ opacity: 0.55 }}>· {lesson.responses.length} {lesson.responses.length === 1 ? 'response' : 'responses'}</span>
+          )}
         </div>
         <div className="hero__timer">
           {openEnded ? (
@@ -184,7 +188,9 @@ function LiveHero({ state, setState, timerVariant = 'ring', dark = false }) {
               <div className="hero__check">✓</div>
               <div>
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>Submitted.</div>
-                <div style={{ opacity: 0.7, fontSize: 14 }}>Responses reveal when the timer ends.</div>
+                <div style={{ opacity: 0.7, fontSize: 14 }}>
+                  {lesson.responses.length} {lesson.responses.length === 1 ? 'response' : 'responses'} so far · reveals when the timer ends.
+                </div>
               </div>
             </div>
           ) : (
@@ -207,7 +213,7 @@ function LiveHero({ state, setState, timerVariant = 'ring', dark = false }) {
                   disabled={!active}
                 />
                 <button type="submit" className="btn btn--primary" disabled={!active || !answer.trim()}>
-                  Submit anonymously →
+                  {name.trim() ? 'Submit →' : 'Submit anonymously →'}
                 </button>
               </div>
             </>
@@ -258,7 +264,7 @@ function RevealAndTeach({ lesson, state, setState }) {
               ))}
             </ol>
             <div className="hero__revealfooter">
-              <a className="btn btn--ghost" href="#archive">Add to archive →</a>
+              <a className="btn btn--ghost" href="#archive">View archive →</a>
               <button className="btn btn--primary" onClick={() => setPhase('reveal')}>← Responses</button>
             </div>
           </div>

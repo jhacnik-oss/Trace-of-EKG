@@ -666,7 +666,7 @@ body::before {
 }
 .admin__title::after { content: '.'; color: var(--accent); }
 
-.admin__tabs { display: flex; gap: 4px; margin-bottom: 32px; border-bottom: 1px solid var(--line); }
+.admin__tabs { display: flex; gap: 4px; margin-bottom: 32px; border-bottom: 1px solid var(--line); overflow-x: auto; }
 .admin__tab {
   background: none; border: none; color: var(--fg-dim);
   font: inherit; font-family: var(--font-mono);
@@ -732,6 +732,7 @@ body::before {
 .admin__stream li:hover, .admin__sched li:hover, .admin__archivelist li:hover { background: var(--card-2); }
 .admin__streamnum { font-family: var(--font-mono); font-size: 11px; color: var(--fg-faint); letter-spacing: 0.1em; }
 .admin__streamtext { flex: 1; font-family: var(--font-display); font-size: 17px; font-style: italic; }
+.admin__streamname { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 0.06em; white-space: nowrap; }
 .admin__streamdel { background: none; border: none; color: var(--fg-faint); width: 24px; height: 24px; border-radius: 12px; cursor: pointer; font-size: 18px; }
 .admin__streamdel:hover { background: color-mix(in oklch, var(--accent) 20%, transparent); color: var(--accent); }
 

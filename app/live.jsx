@@ -5,7 +5,7 @@
 //   reveal  → word cloud of responses
 //   teach   → teaching points w/ annotated trace
 
-const LIVE_DURATION_S = 30;
+const LIVE_DURATION_S = 60;
 
 // durationS: null/0 => open-ended (no countdown). Returns { remaining, elapsed, openEnded }.
 function useCountdown(startedAt, durationS) {
@@ -159,7 +159,7 @@ function LiveHero({ state, setState, timerVariant = 'ring', dark = false }) {
     <section className="hero hero--live">
       <div className="hero__topbar">
         <div className="hero__status">
-          <span className="dot dot--live" /> <span>Live · Week {String(lesson.week).padStart(2, '0')}</span>
+          <span className="dot dot--live" /> <span>Live · {formatDate(lesson.date)}</span>
           {lesson.responses.length > 0 && (
             <span style={{ opacity: 0.55 }}>· {lesson.responses.length} {lesson.responses.length === 1 ? 'response' : 'responses'}</span>
           )}
@@ -231,7 +231,7 @@ function RevealAndTeach({ lesson, state, setState }) {
     <section className="hero hero--reveal">
       <div className="hero__topbar">
         <div className="hero__status">
-          <span className="dot dot--done" /> <span>Week {String(lesson.week).padStart(2, '0')} · {phase === 'reveal' ? 'Responses' : 'Teaching points'}</span>
+          <span className="dot dot--done" /> <span>{formatDate(lesson.date)} · {phase === 'reveal' ? 'Responses' : 'Teaching points'}</span>
         </div>
         <div className="hero__tabs">
           <button className={`tab ${phase === 'reveal' ? 'tab--on' : ''}`} onClick={() => setPhase('reveal')}>Responses</button>
@@ -245,11 +245,11 @@ function RevealAndTeach({ lesson, state, setState }) {
           <div className="hero__cloud">
             <WordCloud responses={lesson.responses} />
           </div>
+          <div className="hero__answer">
+            <div className="hero__answerlabel">The read</div>
+            <div className="hero__answertext">{lesson.answer}</div>
+          </div>
           <div className="hero__revealfooter">
-            <div className="hero__answer">
-              <span className="hero__answerlabel">The read</span>
-              <span className="hero__answertext">{lesson.answer}</span>
-            </div>
             <button className="btn btn--primary" onClick={() => setPhase('teach')}>Teaching points →</button>
           </div>
         </div>
@@ -284,7 +284,6 @@ function RevealAndTeach({ lesson, state, setState }) {
 }
 
 function IdleHero({ lesson, dark = false }) {
-  const week = String(lesson.week).padStart(2, '0');
   const topic = lesson.topic || 'ischemia';
   const next = lesson.nextLiveAt ? new Date(lesson.nextLiveAt) : null;
   const [now, setNow] = React.useState(() => new Date());
@@ -362,7 +361,7 @@ function IdleHero({ lesson, dark = false }) {
 
       {/* Footer marker — typographic, no status pill */}
       <div className="idle__marker">
-        <span>TRACE OF EKG · {topic.toUpperCase()} · ISSUE {week}</span>
+        <span>TRACE OF EKG · {topic.toUpperCase()}</span>
         <span className="idle__markersep">—</span>
         <span className="idle__markerlive">
           <span className="idle__armdot" />

@@ -39,7 +39,6 @@ function Archive({ state, layout = 'by-topic' }) {
             const topic = state.topics.find((t) => t.id === l.topic);
             return (
               <li key={l.id} className="archive__row" onClick={() => setOpenId(l.id)}>
-                <span className="archive__week">W{String(l.week).padStart(2, '0')}</span>
                 <span className="archive__rowtitle">{l.title}</span>
                 <span className="archive__topic" style={{ color: topic?.color }}>
                   <span className="chip__dot" style={{ background: topic?.color }} /> {topic?.name}
@@ -94,8 +93,6 @@ function LessonCard({ lesson, topics, onClick }) {
         <div className="card__meta">
           <span className="chip__dot" style={{ background: topic?.color }} />
           <span className="card__topic">{topic?.name}</span>
-          <span className="card__dot">·</span>
-          <span className="card__week">W{String(lesson.week).padStart(2, '0')}</span>
         </div>
         <div className="card__title">{lesson.title}</div>
         <div className="card__date">{formatDate(lesson.date)}</div>
@@ -123,7 +120,7 @@ function LessonModal({ lesson, topics, onClose }) {
             <span className="chip__dot" style={{ background: topic?.color }} />
             <span>{topic?.name}</span>
             <span style={{ opacity: 0.4 }}>·</span>
-            <span>Week {String(lesson.week).padStart(2, '0')} · {formatDate(lesson.date)}</span>
+            <span>{formatDate(lesson.date)}</span>
           </div>
           <h2 className="modal__title">{lesson.title}</h2>
         </div>

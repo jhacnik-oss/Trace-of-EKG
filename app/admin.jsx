@@ -209,16 +209,10 @@ function ThisWeekPanel({ state, setState }) {
           <span>Title</span>
           <input value={draft.title} onChange={(e) => patch({ title: e.target.value })} />
         </label>
-        <div className="admin__row2">
-          <label className="admin__field">
-            <span>Week #</span>
-            <input type="number" value={draft.week} onChange={(e) => patch({ week: +e.target.value })} />
-          </label>
-          <label className="admin__field">
-            <span>Date</span>
-            <input type="date" value={draft.date} onChange={(e) => patch({ date: e.target.value })} />
-          </label>
-        </div>
+        <label className="admin__field">
+          <span>Date</span>
+          <input type="date" value={draft.date} onChange={(e) => patch({ date: e.target.value })} />
+        </label>
         <label className="admin__field">
           <span>Topic</span>
           <select value={draft.topic} onChange={(e) => patch({ topic: e.target.value })}>
@@ -310,7 +304,7 @@ function LiveStreamPanel({ state, setState }) {
   return (
     <div>
       <div className="admin__streamhead">
-        <div><strong>{live.responses.length}</strong> responses for Week {live.week}</div>
+        <div><strong>{live.responses.length}</strong> responses</div>
         <button className="btn btn--ghost" onClick={clear}>Clear all</button>
       </div>
       <ul className="admin__stream">
@@ -422,7 +416,6 @@ function ArchiveAdminPanel({ state, setState }) {
         const topic = state.topics.find((t) => t.id === l.topic);
         return (
           <li key={l.id}>
-            <span className="archive__week">W{String(l.week).padStart(2, '0')}</span>
             <span style={{ flex: 1 }}>
               <div style={{ fontWeight: 600 }}>{l.title}</div>
               <div style={{ fontSize: 13, opacity: 0.6 }}>
@@ -473,7 +466,7 @@ function ApprovalsPanel({ state, setState }) {
   const [editing, setEditing] = React.useState(null);
 
   const approve = (lesson) => {
-    const archived = { ...lesson, id: lesson.id.replace('pending-', 'w'), week: lesson.week || state.currentWeek };
+    const archived = { ...lesson, id: lesson.id.replace('pending-', 'w') };
     setState((s) => ({
       ...s,
       lessons: [archived, ...s.lessons],

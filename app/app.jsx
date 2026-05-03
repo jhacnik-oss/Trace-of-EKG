@@ -95,6 +95,7 @@ function App() {
           </button>
         </div>
       </nav>
+      {DEMO_MODE && <DemoBanner route={route} />}
 
       {route === 'home' && (
         <>
@@ -115,6 +116,20 @@ function App() {
       </footer>
 
       {tweaksOpen && <TweaksPanel tweaks={tweaks} patch={patchTweak} onClose={() => { setTweaksOpen(false); window.parent.postMessage({ type: '__deactivate_edit_mode' }, '*'); }} />}
+    </div>
+  );
+}
+
+function DemoBanner({ route }) {
+  const isAdminRoute = ['admin', 'lecture', 'draft'].includes(route);
+  return (
+    <div className="demo-banner" role="status">
+      <strong>Local demo.</strong>
+      <span>
+        {isAdminRoute
+          ? 'Admin and presenter controls are prototype-only and are not secure authentication.'
+          : 'Submissions, responses, and uploads stay in this browser and are not sent to an admin.'}
+      </span>
     </div>
   );
 }
@@ -190,4 +205,4 @@ function TweaksPanel({ tweaks, patch, onClose }) {
   );
 }
 
-Object.assign(window, { App, TweaksPanel, Logo, TWEAK_DEFAULTS, parseRoute });
+Object.assign(window, { App, DemoBanner, TweaksPanel, Logo, TWEAK_DEFAULTS, parseRoute });

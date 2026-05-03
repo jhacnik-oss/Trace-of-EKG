@@ -68,9 +68,11 @@ function SubmitPage({ state, setState }) {
       <section className="submit">
         <div className="submit__thanks">
           <div className="submit__thanks-mark">◉</div>
-          <h1 className="submit__thanks-title">Tracing received.</h1>
+          <h1 className="submit__thanks-title">{DEMO_MODE ? 'Tracing saved locally.' : 'Tracing received.'}</h1>
           <p className="submit__thanks-sub">
-            Thank you, {form.name.split(' ')[0]}. We'll review it and reach out at <em>{form.email}</em> if we feature it.
+            {DEMO_MODE
+              ? <>Thank you, {form.name.split(' ')[0]}. This prototype saved the tracing in this browser only.</>
+              : <>Thank you, {form.name.split(' ')[0]}. We'll review it and reach out at <em>{form.email}</em> if we feature it.</>}
           </p>
           <div className="submit__thanks-actions">
             <button className="btn btn--primary" onClick={() => {
@@ -90,8 +92,10 @@ function SubmitPage({ state, setState }) {
         <div className="hero__label">Submit an EKG</div>
         <h1 className="submit__title">Have a tracing worth sharing?</h1>
         <p className="submit__lede">
-          Interesting, subtle, or straight-up puzzling — send it in. If we feature it in a
-          future five-minute lesson, we'll credit you (or keep you anonymous, your call).
+          {DEMO_MODE
+            ? 'Interesting, subtle, or straight-up puzzling — try the submission flow. In this static prototype, uploads stay in your browser.'
+            : <>Interesting, subtle, or straight-up puzzling — send it in. If we feature it in a
+              future five-minute lesson, we'll credit you (or keep you anonymous, your call).</>}
         </p>
       </header>
 
@@ -161,7 +165,7 @@ function SubmitPage({ state, setState }) {
 
         <div className="submit__actions">
           <button type="submit" className="btn btn--primary" disabled={status === 'sending'}>
-            {status === 'sending' ? 'Sending…' : 'Send tracing →'}
+            {status === 'sending' ? 'Saving…' : DEMO_MODE ? 'Save locally →' : 'Send tracing →'}
           </button>
           <a className="btn btn--ghost" href="#home">Cancel</a>
         </div>

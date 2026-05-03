@@ -1,0 +1,219 @@
+// STElevationStrip — a 2D rhythm strip animation for the idle landing.
+// Shows NORMAL SINUS RHYTHM: P → narrow QRS → isoelectric ST → upright T,
+// scrolling continuously on classic ECG paper.
+
+(function () {
+  const VB_W = 1400; // viewBox width
+  const VB_H = 200; // viewBox height
+  const BASELINE = 120; // y-coordinate of the isoelectric line
+  const MM = 4; // 1 small box = 4 svg units
+
+  // Build one PQRST beat for NORMAL SINUS RHYTHM:
+  // - small upright P (~2mm)
+  // - normal PR interval
+  // - narrow QRS, R ~12mm
+  // - isoelectric ST segment (no elevation)
+  // - upright T wave ~3-4mm (smaller than R, asymmetric)
+  // - return to baseline
+  function beat(jitter = 0) {
+    const j = n => (Math.random() - 0.5) * n * jitter;
+    return [
+    // TP segment
+    ['L', 9 * MM + j(1), 0],
+    // P wave
+    ['Q', 1 * MM, -2 * MM, 2.5 * MM, 0],
+    // PR segment
+    ['L', 1.5 * MM, 0],
+    // Q wave (small)
+    ['L', 0.4 * MM, 1 * MM],
+    // R wave
+    ['L', 0.5 * MM, -13 * MM + j(0.4)],
+    // S wave
+    ['L', 0.6 * MM, 14 * MM + j(0.3)],
+    // J-point — back to baseline (NO elevation)
+    ['L', 0.4 * MM, -1 * MM],
+    // ST segment — flat, isoelectric
+    ['L', 2 * MM, 0],
+    // T wave — upright, ~3.5mm, asymmetric
+    ['Q', 1.5 * MM, -3.5 * MM, 4 * MM, -3 * MM + j(0.2)], ['Q', 2 * MM, 1 * MM, 3 * MM, 3 * MM],
+    // Return to baseline
+    ['L', 1.5 * MM, 0]];
+  }
+
+  // Generate a long path of N beats, return SVG path "d" + total width.
+  function buildBeatPath(n) {
+    let d = `M0 ${BASELINE} `;
+    let x = 0,
+      y = BASELINE;
+    for (let i = 0; i < n; i++) {
+      const cmds = beat(0.6);
+      for (const c of cmds) {
+        if (c[0] === 'L') {
+          x += c[1];
+          y += c[2];
+          d += `L${x.toFixed(1)} ${y.toFixed(1)} `;
+        } else if (c[0] === 'Q') {
+          const cx = x + c[1],
+            cy = y + c[2];
+          x += c[3];
+          y += c[4];
+          d += `Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x.toFixed(1)} ${y.toFixed(1)} `;
+        }
+      }
+      // Snap baseline to avoid drift
+      d += `L${x.toFixed(1)} ${BASELINE} `;
+      y = BASELINE;
+    }
+    return {
+      d,
+      width: x
+    };
+  }
+  function STElevationStrip({
+    height = 280,
+    speed = 38,
+    dark = false
+  }) {
+    // Build one long path; we render it twice end-to-end and translate to scroll.
+    const {
+      d,
+      width
+    } = React.useMemo(() => buildBeatPath(8), []);
+    const [offset, setOffset] = React.useState(0);
+    const reduced = React.useRef(typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    React.useEffect(() => {
+      if (reduced.current) return;
+      let raf,
+        last = performance.now();
+      const tick = t => {
+        const dt = (t - last) / 1000;
+        last = t;
+        setOffset(o => (o + dt * speed) % width);
+        raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(raf);
+    }, [width, speed]);
+
+    // Colors: dark mode = red trace on black; light mode = dark trace on cream paper
+    const bg = dark ? '#000' : '#f4ead6';
+    const traceColor = dark ? '#ff4d5e' : '#1a1310';
+    const glowFilter = dark ? 'drop-shadow(0 0 3px #ff4d5e)' : 'drop-shadow(0 0 0.6px #1a1310)';
+    const gridSmSm = dark ? 'rgba(255,77,94,0.10)' : 'rgba(200,53,77,0.18)';
+    const gridLgSm = dark ? 'rgba(255,77,94,0.25)' : 'rgba(200,53,77,0.42)';
+    const baseline = dark ? 'rgba(255,77,94,0.18)' : 'rgba(120,30,50,0.18)';
+    return /*#__PURE__*/React.createElement("div", {
+      className: "stemi",
+      style: {
+        background: bg
+      },
+      "aria-label": "Animated rhythm strip"
+    }, /*#__PURE__*/React.createElement("svg", {
+      viewBox: `0 0 ${VB_W} ${VB_H}`,
+      width: "100%",
+      height: height,
+      preserveAspectRatio: "none",
+      className: "stemi__svg",
+      style: {
+        background: bg
+      }
+    }, /*#__PURE__*/React.createElement("defs", null, /*#__PURE__*/React.createElement("pattern", {
+      id: "stemi-grid-sm",
+      width: MM,
+      height: MM,
+      patternUnits: "userSpaceOnUse"
+    }, /*#__PURE__*/React.createElement("rect", {
+      width: MM,
+      height: MM,
+      fill: "transparent"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: `M${MM} 0H0V${MM}`,
+      fill: "none",
+      stroke: gridSmSm,
+      strokeWidth: "0.4"
+    })), /*#__PURE__*/React.createElement("pattern", {
+      id: "stemi-grid-lg",
+      width: MM * 5,
+      height: MM * 5,
+      patternUnits: "userSpaceOnUse"
+    }, /*#__PURE__*/React.createElement("rect", {
+      width: MM * 5,
+      height: MM * 5,
+      fill: "url(#stemi-grid-sm)"
+    }), /*#__PURE__*/React.createElement("path", {
+      d: `M${MM * 5} 0H0V${MM * 5}`,
+      fill: "none",
+      stroke: gridLgSm,
+      strokeWidth: "0.7"
+    })), /*#__PURE__*/React.createElement("linearGradient", {
+      id: "stemi-fade",
+      x1: "0",
+      x2: "1",
+      y1: "0",
+      y2: "0"
+    }, /*#__PURE__*/React.createElement("stop", {
+      offset: "0",
+      stopColor: "var(--bg)",
+      stopOpacity: "1"
+    }), /*#__PURE__*/React.createElement("stop", {
+      offset: "0.06",
+      stopColor: "var(--bg)",
+      stopOpacity: "0"
+    }), /*#__PURE__*/React.createElement("stop", {
+      offset: "0.94",
+      stopColor: "var(--bg)",
+      stopOpacity: "0"
+    }), /*#__PURE__*/React.createElement("stop", {
+      offset: "1",
+      stopColor: "var(--bg)",
+      stopOpacity: "1"
+    }))), /*#__PURE__*/React.createElement("rect", {
+      width: VB_W,
+      height: VB_H,
+      fill: bg
+    }), /*#__PURE__*/React.createElement("rect", {
+      width: VB_W,
+      height: VB_H,
+      fill: "url(#stemi-grid-lg)"
+    }), /*#__PURE__*/React.createElement("line", {
+      x1: "0",
+      x2: VB_W,
+      y1: BASELINE,
+      y2: BASELINE,
+      stroke: baseline,
+      strokeWidth: "0.4",
+      strokeDasharray: "2 3"
+    }), /*#__PURE__*/React.createElement("g", {
+      transform: `translate(${-offset},0)`
+    }, /*#__PURE__*/React.createElement("path", {
+      d: d,
+      fill: "none",
+      stroke: traceColor,
+      strokeWidth: "1.6",
+      strokeLinejoin: "round",
+      strokeLinecap: "round",
+      style: {
+        filter: glowFilter
+      }
+    }), /*#__PURE__*/React.createElement("path", {
+      d: d,
+      transform: `translate(${width},0)`,
+      fill: "none",
+      stroke: traceColor,
+      strokeWidth: "1.6",
+      strokeLinejoin: "round",
+      strokeLinecap: "round",
+      style: {
+        filter: glowFilter
+      }
+    })), /*#__PURE__*/React.createElement("rect", {
+      width: VB_W,
+      height: VB_H,
+      fill: "url(#stemi-fade)",
+      pointerEvents: "none"
+    })));
+  }
+  Object.assign(window, {
+    STElevationStrip
+  });
+})();

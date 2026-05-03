@@ -153,11 +153,26 @@ function LessonModal({ lesson, topics, onClose }) {
   );
 }
 
+function dateOnlyToLocalDate(iso) {
+  if (typeof iso !== 'string') return null;
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+function todayLocalISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function formatDate(iso) {
   try {
-    const d = new Date(iso);
+    const d = dateOnlyToLocalDate(iso) || new Date(String(iso));
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   } catch (e) { return iso; }
 }
 
-Object.assign(window, { Archive, LessonCard, LessonModal, formatDate });
+Object.assign(window, { Archive, LessonCard, LessonModal, dateOnlyToLocalDate, todayLocalISO, formatDate });

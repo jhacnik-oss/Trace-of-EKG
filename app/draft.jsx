@@ -35,7 +35,7 @@ function DraftPage({ state, setState, params }) {
     );
   }
 
-  const isExpired = inviteDate && inviteDate < new Date().toISOString().slice(0, 10);
+  const isExpired = inviteDate && inviteDate < todayLocalISO();
 
   if (isExpired) {
     return (

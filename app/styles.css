@@ -166,6 +166,29 @@ body::before {
 }
 .nav__darkmode:hover { color: var(--fg); border-color: var(--fg-dim); background: var(--card-2); }
 
+.demo-banner {
+  position: relative;
+  z-index: 18;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 20px;
+  border-bottom: 1px solid color-mix(in oklch, var(--accent-2) 28%, var(--line));
+  background: color-mix(in oklch, var(--accent-2) 12%, var(--bg));
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+}
+.demo-banner strong {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
 /* ═══════════════════════════════════════════════════════════
    HERO — the live-EKG centerpiece
    ═══════════════════════════════════════════════════════════ */
@@ -1228,6 +1251,7 @@ body::before {
   .nav { padding: 12px 20px; }
   .nav__link { padding: 7px 10px; font-size: 13px; }
   .nav__darkmode { display: none; }
+  .demo-banner { align-items: flex-start; flex-direction: column; text-align: left; }
 
   /* Global horizontal padding */
   .wrap { padding: 0 20px; }

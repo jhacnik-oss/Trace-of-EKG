@@ -1,8 +1,9 @@
 // Shared state + storage for Trace of EKG.
-// Everything persists to localStorage so the site is usable standalone.
+// Demo mode persists to localStorage so the site is usable standalone.
 
 const STORAGE_KEY = 'trace-of-ekg-v1';
-const ADMIN_PASSWORD = 'sinus'; // demo password
+const DEMO_MODE = true;
+const ADMIN_PASSWORD = 'sinus'; // local demo password, not production auth
 
 const TOPICS = [
   { id: 'ischemia', name: 'Ischemia & Infarction', color: '#c8354d' },
@@ -247,6 +248,6 @@ function useAppState() {
 }
 
 Object.assign(window, {
-  STORAGE_KEY, ADMIN_PASSWORD, TOPICS, SEED_LESSONS, DEFAULT_STATE,
+  STORAGE_KEY, DEMO_MODE, ADMIN_PASSWORD, TOPICS, SEED_LESSONS, DEFAULT_STATE,
   loadState, saveState, useAppState,
 });

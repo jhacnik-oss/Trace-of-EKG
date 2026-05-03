@@ -22,11 +22,11 @@ function AdminPage({ state, setState }) {
         <form className="admin__login" onSubmit={submit}>
           <div className="admin__lock">◉</div>
           <h2>Admin access</h2>
-          <p className="admin__sub">For the program director only.</p>
+          <p className="admin__sub">Local prototype controls. This is not production authentication.</p>
           <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Password" autoFocus />
           {err && <div className="admin__err">{err}</div>}
           <button type="submit" className="btn btn--primary">Unlock →</button>
-          <div className="admin__hint">Demo password: <code>sinus</code></div>
+          <div className="admin__hint">Demo password: <code>{ADMIN_PASSWORD}</code></div>
         </form>
       </section>
     );

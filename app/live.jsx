@@ -124,16 +124,6 @@ function LiveHero({ state, setState, timerVariant = 'bar', dark = false }) {
   const active = lesson.liveStartedAt && (openEnded || remaining > 0) && !lesson.revealed;
   const expired = !openEnded && lesson.liveStartedAt && remaining <= 0;
 
-  // Auto-advance: once timer hits 0 (only if timed), move to reveal.
-  React.useEffect(() => {
-    if (expired && !lesson.revealed) {
-      const t = setTimeout(() => {
-        setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, revealed: true } }));
-      }, 400);
-      return () => clearTimeout(t);
-    }
-  }, [expired, lesson.revealed]);
-
   const [answer, setAnswer] = React.useState('');
   const [name, setName] = React.useState('');
   const [submitted, setSubmitted] = React.useState(false);
@@ -191,7 +181,7 @@ function LiveHero({ state, setState, timerVariant = 'bar', dark = false }) {
               <div>
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>Submitted.</div>
                 <div style={{ opacity: 0.7, fontSize: 14 }}>
-                  {lesson.responses.length} {lesson.responses.length === 1 ? 'response' : 'responses'} so far · reveals when the timer ends.
+                  {lesson.responses.length} {lesson.responses.length === 1 ? 'response' : 'responses'} so far · reveals when the instructor opens the read.
                 </div>
               </div>
             </div>

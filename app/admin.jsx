@@ -1,10 +1,19 @@
-// Admin panel — password-gated. Post this week, schedule, view responses, edit archive, manage topics.
+// Admin panel — Google-gated in Firebase mode. Local password remains for offline demo fallback.
 
 function AdminPage({ state, setState }) {
-  const [auth, setAuth] = React.useState(() => sessionStorage.getItem('ekg-admin-auth') === '1');
+  const [auth, setAuth] = React.useState(() => !FIREBASE_ENABLED && sessionStorage.getItem('ekg-admin-auth') === '1');
+  const [user, setUser] = React.useState(() => window.traceFirebase?.auth?.currentUser || null);
   const [pw, setPw] = React.useState('');
   const [err, setErr] = React.useState('');
   const [tab, setTab] = React.useState('this-week');
+
+  React.useEffect(() => {
+    if (!FIREBASE_ENABLED) return undefined;
+    return window.traceFirebase.auth.onAuthStateChanged((nextUser) => {
+      setUser(nextUser);
+      setAuth(window.traceFirebase.isAllowedAdmin(nextUser));
+    });
+  }, []);
 
   const submit = (e) => {
     e.preventDefault();
@@ -16,7 +25,48 @@ function AdminPage({ state, setState }) {
     }
   };
 
+  const googleSignIn = async () => {
+    setErr('');
+    try {
+      const nextUser = await window.traceFirebase.signInAdmin();
+      setUser(nextUser);
+      setAuth(true);
+    } catch (error) {
+      setErr(error.message || 'Could not sign in.');
+    }
+  };
+
+  const signOut = async () => {
+    if (FIREBASE_ENABLED) {
+      await window.traceFirebase.signOutAdmin();
+      setAuth(false);
+      return;
+    }
+    sessionStorage.removeItem('ekg-admin-auth');
+    setAuth(false);
+  };
+
   if (!auth) {
+    if (FIREBASE_ENABLED) {
+      return (
+        <section className="admin admin--locked">
+          <div className="admin__login">
+            <div className="admin__lock">◉</div>
+            <h2>Admin access</h2>
+            <p className="admin__sub">Sign in with the authorized Google account.</p>
+            <button type="button" className="btn btn--primary" onClick={googleSignIn}>
+              Sign in with Google →
+            </button>
+            {user?.email && !window.traceFirebase.isAllowedAdmin(user) && (
+              <div className="admin__err">Signed in as {user.email}, which is not an admin.</div>
+            )}
+            {err && <div className="admin__err">{err}</div>}
+            <div className="admin__hint">Admin: <code>{window.traceFirebase.adminEmail}</code></div>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className="admin admin--locked">
         <form className="admin__login" onSubmit={submit}>
@@ -40,8 +90,9 @@ function AdminPage({ state, setState }) {
         <div>
           <div className="hero__label">Admin</div>
           <h2 className="admin__title">Trace of EKG · control</h2>
+          {FIREBASE_ENABLED && user?.email && <div className="admin__sub">Signed in as {user.email}</div>}
         </div>
-        <button className="btn btn--ghost" onClick={() => { sessionStorage.removeItem('ekg-admin-auth'); setAuth(false); }}>Sign out</button>
+        <button className="btn btn--ghost" onClick={signOut}>Sign out</button>
       </div>
       <div className="admin__tabs">
         {['this-week', 'live-stream', 'drafts', 'invites', 'approvals', 'submissions', 'schedule', 'archive', 'topics'].map((t) => {

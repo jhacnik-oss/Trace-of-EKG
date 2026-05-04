@@ -2,10 +2,36 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Launch rules for the current public prototype.
-    // Anonymous Auth must be enabled in Firebase Authentication.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email == "jhacnik@gmail.com";
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function onlyAddsLiveResponse() {
+      return isSignedIn()
+        && changedKeys().hasOnly(["liveLesson"])
+        && request.resource.data.liveLesson.diff(resource.data.liveLesson).affectedKeys().hasOnly(["responses"])
+        && request.resource.data.liveLesson.responses.size() == resource.data.liveLesson.responses.size() + 1;
+    }
+
+    function onlyAddsSubmission() {
+      return isSignedIn()
+        && changedKeys().hasOnly(["submissions"])
+        && request.resource.data.submissions.size() == resource.data.submissions.size() + 1;
+    }
+
     match /settings/main {
-      allow read, write: if request.auth != null;
+      allow read: if isSignedIn();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || onlyAddsLiveResponse() || onlyAddsSubmission();
     }
 
     match /{document=**} {

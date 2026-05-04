@@ -32,10 +32,41 @@ function initTraceFirebase() {
     const db = firebase.firestore(app);
     const storage = firebase.storage(app);
     const mainRef = db.collection('settings').doc('main');
-    const authReady = auth.signInAnonymously().catch(error => {
-      console.error('Trace anonymous auth failed:', error);
-      throw error;
+    const adminEmail = 'jhacnik@gmail.com';
+    const authReady = new Promise((resolve, reject) => {
+      const unsubscribe = auth.onAuthStateChanged(user => {
+        unsubscribe();
+        if (user) {
+          resolve(user);
+          return;
+        }
+        auth.signInAnonymously().then(cred => resolve(cred.user)).catch(error => {
+          console.error('Trace anonymous auth failed:', error);
+          reject(error);
+        });
+      }, reject);
     });
+    function isAllowedAdmin(user = auth.currentUser) {
+      return Boolean(user?.email && user.email.toLowerCase() === adminEmail);
+    }
+    async function signInAdmin() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({
+        login_hint: adminEmail
+      });
+      const result = await auth.signInWithPopup(provider);
+      if (!isAllowedAdmin(result.user)) {
+        const email = result.user?.email || 'that account';
+        await auth.signOut();
+        await auth.signInAnonymously();
+        throw new Error(`${email} is not authorized for admin access.`);
+      }
+      return result.user;
+    }
+    async function signOutAdmin() {
+      await auth.signOut();
+      return auth.signInAnonymously();
+    }
     async function uploadDataUrl(dataUrl, fileName, folder = 'submissions') {
       await authReady;
       const blob = dataUrlToBlob(dataUrl);
@@ -64,6 +95,10 @@ function initTraceFirebase() {
       storage,
       mainRef,
       authReady,
+      adminEmail,
+      isAllowedAdmin,
+      signInAdmin,
+      signOutAdmin,
       uploadDataUrl
     };
   } catch (error) {

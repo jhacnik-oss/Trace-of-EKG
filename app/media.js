@@ -1,8 +1,7 @@
 // LessonMedia — renders uploaded EKG image/PDF if present, else falls
 // back to the deterministic placeholder trace.
-// Accepts any of: lesson.imageUrl (remote), lesson.imageData (data URL
-// from file upload), lesson.pdfData (data URL for PDF — rendered in an
-// <embed>).
+// Accepts uploaded data URLs during local demo mode and remote Firebase
+// Storage URLs when the site is connected.
 
 function LessonMedia({
   lesson,
@@ -14,7 +13,7 @@ function LessonMedia({
   fit = 'contain'
 }) {
   const src = lesson.imageData || lesson.imageUrl;
-  const pdf = lesson.pdfData;
+  const pdf = lesson.pdfData || lesson.pdfUrl;
   if (pdf) {
     return /*#__PURE__*/React.createElement("div", {
       style: {

@@ -132,9 +132,10 @@ function SubmissionsPanel({
         question: 'Interpret this EKG',
         answer: '',
         bullets: sub.notes ? sub.notes.split('\n').filter(Boolean) : [],
-        imageData: sub.imageData,
-        pdfData: sub.pdfData,
-        imageUrl: '',
+        imageData: sub.imageData || null,
+        pdfData: sub.pdfData || null,
+        imageUrl: sub.imageUrl || '',
+        pdfUrl: sub.pdfUrl || '',
         responses: [],
         revealed: false,
         liveStartedAt: null
@@ -165,10 +166,10 @@ function SubmissionsPanel({
     className: `admin__subitem admin__subitem--${sub.status}`
   }, /*#__PURE__*/React.createElement("div", {
     className: "admin__subthumb"
-  }, sub.imageData ? /*#__PURE__*/React.createElement("img", {
-    src: sub.imageData,
+  }, sub.imageData || sub.imageUrl ? /*#__PURE__*/React.createElement("img", {
+    src: sub.imageData || sub.imageUrl,
     alt: ""
-  }) : sub.pdfData ? /*#__PURE__*/React.createElement("div", {
+  }) : sub.pdfData || sub.pdfUrl ? /*#__PURE__*/React.createElement("div", {
     className: "admin__subpdf"
   }, "PDF") : /*#__PURE__*/React.createElement("div", {
     className: "admin__subpdf"
@@ -226,15 +227,15 @@ function SubmissionsPanel({
     href: `mailto:${open.email}`
   }, open.email)), /*#__PURE__*/React.createElement("div", {
     className: "modal__trace"
-  }, open.imageData ? /*#__PURE__*/React.createElement("img", {
-    src: open.imageData,
+  }, open.imageData || open.imageUrl ? /*#__PURE__*/React.createElement("img", {
+    src: open.imageData || open.imageUrl,
     alt: "",
     style: {
       maxWidth: '100%',
       display: 'block'
     }
-  }) : open.pdfData ? /*#__PURE__*/React.createElement("embed", {
-    src: open.pdfData,
+  }) : open.pdfData || open.pdfUrl ? /*#__PURE__*/React.createElement("embed", {
+    src: open.pdfData || open.pdfUrl,
     type: "application/pdf",
     width: "100%",
     height: "500"

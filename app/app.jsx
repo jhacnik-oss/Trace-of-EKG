@@ -95,7 +95,7 @@ function App() {
           </button>
         </div>
       </nav>
-      {DEMO_MODE && <DemoBanner route={route} />}
+      <ConnectionBanner route={route} />
 
       {route === 'home' && (
         <>
@@ -120,8 +120,16 @@ function App() {
   );
 }
 
-function DemoBanner({ route }) {
+function ConnectionBanner({ route }) {
   const isAdminRoute = ['admin', 'lecture', 'draft'].includes(route);
+  if (!DEMO_MODE) {
+    return (
+      <div className="demo-banner demo-banner--live" role="status">
+        <strong>Live sync on.</strong>
+        <span>Responses, submissions, and admin changes sync across devices.</span>
+      </div>
+    );
+  }
   return (
     <div className="demo-banner" role="status">
       <strong>Local demo.</strong>
@@ -205,4 +213,4 @@ function TweaksPanel({ tweaks, patch, onClose }) {
   );
 }
 
-Object.assign(window, { App, DemoBanner, TweaksPanel, Logo, TWEAK_DEFAULTS, parseRoute });
+Object.assign(window, { App, ConnectionBanner, TweaksPanel, Logo, TWEAK_DEFAULTS, parseRoute });

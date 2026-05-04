@@ -1,5 +1,6 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
 const BABEL_URL = 'https://unpkg.com/@babel/standalone@7.29.0/babel.min.js';
@@ -14,7 +15,7 @@ async function loadBabel() {
   return context.Babel;
 }
 
-const appDir = new URL('../app/', import.meta.url);
+const appDir = fileURLToPath(new URL('../app/', import.meta.url));
 const Babel = await loadBabel();
 const files = (await readdir(appDir))
   .filter((file) => file.endsWith('.jsx'))
@@ -37,7 +38,7 @@ const files = (await readdir(appDir))
   });
 
 for (const file of files) {
-  const input = join(appDir.pathname, file);
+  const input = join(appDir, file);
   const output = input.replace(/\.jsx$/, '.js');
   const source = await readFile(input, 'utf8');
   const result = Babel.transform(source, {

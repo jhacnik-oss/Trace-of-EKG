@@ -57,7 +57,7 @@ function SubmitPage({
     if (fileRef.current) fileRef.current.value = '';
   };
   const validEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-  const submit = e => {
+  const submit = async e => {
     e.preventDefault();
     setErr('');
     if (!form.name.trim()) return setErr('Please enter your name.');
@@ -65,24 +65,37 @@ function SubmitPage({
     if (!form.imageData && !form.pdfData) return setErr('Please attach an EKG image or PDF.');
     if (!form.consent) return setErr('Please confirm the submission is de-identified.');
     setStatus('sending');
-    const entry = {
-      id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      submittedAt: new Date().toISOString(),
-      name: form.name.trim(),
-      email: form.email.trim(),
-      title: form.title.trim(),
-      topic: form.topic,
-      notes: form.notes.trim(),
-      imageData: form.imageData,
-      pdfData: form.pdfData,
-      fileName: form.fileName,
-      status: 'new' // new | reviewed | used | archived
-    };
-    setState(s => ({
-      ...s,
-      submissions: [entry, ...(s.submissions || [])]
-    }));
-    setTimeout(() => setStatus('sent'), 400);
+    try {
+      let upload = null;
+      if (!DEMO_MODE && window.traceFirebase?.uploadDataUrl) {
+        upload = await window.traceFirebase.uploadDataUrl(form.imageData || form.pdfData, form.fileName, 'submissions');
+      }
+      const entry = {
+        id: 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        submittedAt: new Date().toISOString(),
+        name: form.name.trim(),
+        email: form.email.trim(),
+        title: form.title.trim(),
+        topic: form.topic,
+        notes: form.notes.trim(),
+        imageData: DEMO_MODE ? form.imageData : null,
+        pdfData: DEMO_MODE ? form.pdfData : null,
+        imageUrl: upload && form.imageData ? upload.url : '',
+        pdfUrl: upload && form.pdfData ? upload.url : '',
+        storagePath: upload?.path || '',
+        fileName: form.fileName,
+        status: 'new' // new | reviewed | used | archived
+      };
+      setState(s => ({
+        ...s,
+        submissions: [entry, ...(s.submissions || [])]
+      }));
+      setTimeout(() => setStatus('sent'), 400);
+    } catch (error) {
+      console.error(error);
+      setErr('Could not send the tracing. Please try again.');
+      setStatus('error');
+    }
   };
   if (status === 'sent') {
     return /*#__PURE__*/React.createElement("section", {

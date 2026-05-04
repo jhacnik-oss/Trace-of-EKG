@@ -123,7 +123,7 @@ function App() {
     className: "nav__darkmode",
     onClick: () => patchTweak('dark', !tweaks.dark),
     "aria-label": tweaks.dark ? 'Switch to light mode' : 'Switch to dark mode'
-  }, tweaks.dark ? '☀ Light' : '☾ Dark'))), DEMO_MODE && /*#__PURE__*/React.createElement(DemoBanner, {
+  }, tweaks.dark ? '☀ Light' : '☾ Dark'))), /*#__PURE__*/React.createElement(ConnectionBanner, {
     route: route
   }), route === 'home' && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(LiveHero, {
     state: state,
@@ -165,10 +165,16 @@ function App() {
     }
   }));
 }
-function DemoBanner({
+function ConnectionBanner({
   route
 }) {
   const isAdminRoute = ['admin', 'lecture', 'draft'].includes(route);
+  if (!DEMO_MODE) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "demo-banner demo-banner--live",
+      role: "status"
+    }, /*#__PURE__*/React.createElement("strong", null, "Live sync on."), /*#__PURE__*/React.createElement("span", null, "Responses, submissions, and admin changes sync across devices."));
+  }
   return /*#__PURE__*/React.createElement("div", {
     className: "demo-banner",
     role: "status"
@@ -293,7 +299,7 @@ function TweaksPanel({
 }
 Object.assign(window, {
   App,
-  DemoBanner,
+  ConnectionBanner,
   TweaksPanel,
   Logo,
   TWEAK_DEFAULTS,

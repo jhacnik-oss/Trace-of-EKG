@@ -1,8 +1,9 @@
 // Shared state + storage for Trace of EKG.
-// Demo mode persists to localStorage so the site is usable standalone.
+// Firebase mode syncs across devices. Demo mode persists to localStorage.
 
 const STORAGE_KEY = 'trace-of-ekg-v1';
-const DEMO_MODE = true;
+const FIREBASE_ENABLED = Boolean(window.traceFirebase?.enabled);
+const DEMO_MODE = !FIREBASE_ENABLED;
 const ADMIN_PASSWORD = 'sinus'; // local demo password, not production auth
 
 const TOPICS = [
@@ -229,25 +230,90 @@ function saveState(s) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {}
 }
 
+function normalizeState(value) {
+  return { ...structuredClone(DEFAULT_STATE), ...(value || {}) };
+}
+
+function cleanForFirestore(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+async function saveRemoteState(updater, optimisticState) {
+  if (!FIREBASE_ENABLED) return;
+  const ref = window.traceFirebase.mainRef;
+  try {
+    await window.traceFirebase.db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const current = normalizeState(snap.exists ? snap.data() : DEFAULT_STATE);
+      const next = typeof updater === 'function' ? updater(current) : optimisticState;
+      tx.set(ref, cleanForFirestore(normalizeState(next)), { merge: false });
+    });
+  } catch (error) {
+    console.error('Trace state sync failed:', error);
+  }
+}
+
 function useAppState() {
   const [state, setState] = React.useState(loadState);
-  React.useEffect(() => { saveState(state); }, [state]);
+  const stateRef = React.useRef(state);
+
+  React.useEffect(() => { stateRef.current = state; }, [state]);
+
+  React.useEffect(() => {
+    if (FIREBASE_ENABLED) return undefined;
+    saveState(state);
+  }, [state]);
+
+  React.useEffect(() => {
+    if (!FIREBASE_ENABLED) return undefined;
+    let first = true;
+    let unsubscribe = null;
+    window.traceFirebase.authReady.then(() => {
+      unsubscribe = window.traceFirebase.mainRef.onSnapshot((snap) => {
+        if (!snap.exists) {
+          window.traceFirebase.mainRef.set(cleanForFirestore(normalizeState(DEFAULT_STATE)), { merge: false });
+          return;
+        }
+        const next = normalizeState(snap.data());
+        stateRef.current = next;
+        setState(next);
+        first = false;
+      }, (error) => {
+        console.error('Trace state listener failed:', error);
+      });
+    }).catch((error) => {
+      console.error('Trace auth setup failed:', error);
+    });
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   // Listen for changes from other tabs (admin -> live).
   React.useEffect(() => {
+    if (FIREBASE_ENABLED) return undefined;
     const onStorage = (e) => {
       if (e.key === STORAGE_KEY && e.newValue) {
-        try { setState(JSON.parse(e.newValue)); } catch {}
+        try { setState(normalizeState(JSON.parse(e.newValue))); } catch {}
       }
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  return [state, setState];
+  const setSyncedState = React.useCallback((updater) => {
+    setState((prev) => {
+      const next = normalizeState(typeof updater === 'function' ? updater(prev) : updater);
+      stateRef.current = next;
+      if (FIREBASE_ENABLED) saveRemoteState(updater, next);
+      return next;
+    });
+  }, []);
+
+  return [state, setSyncedState];
 }
 
 Object.assign(window, {
-  STORAGE_KEY, DEMO_MODE, ADMIN_PASSWORD, TOPICS, SEED_LESSONS, DEFAULT_STATE,
-  loadState, saveState, useAppState,
+  STORAGE_KEY, FIREBASE_ENABLED, DEMO_MODE, ADMIN_PASSWORD, TOPICS, SEED_LESSONS, DEFAULT_STATE,
+  loadState, saveState, normalizeState, useAppState,
 });

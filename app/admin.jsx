@@ -98,9 +98,10 @@ function SubmissionsPanel({ state, setState }) {
         question: 'Interpret this EKG',
         answer: '',
         bullets: sub.notes ? sub.notes.split('\n').filter(Boolean) : [],
-        imageData: sub.imageData,
-        pdfData: sub.pdfData,
-        imageUrl: '',
+        imageData: sub.imageData || null,
+        pdfData: sub.pdfData || null,
+        imageUrl: sub.imageUrl || '',
+        pdfUrl: sub.pdfUrl || '',
         responses: [],
         revealed: false,
         liveStartedAt: null,
@@ -129,7 +130,7 @@ function SubmissionsPanel({ state, setState }) {
           {filtered.map((sub) => (
             <li key={sub.id} className={`admin__subitem admin__subitem--${sub.status}`}>
               <div className="admin__subthumb">
-                {sub.imageData ? <img src={sub.imageData} alt="" /> : sub.pdfData ? <div className="admin__subpdf">PDF</div> : <div className="admin__subpdf">—</div>}
+                {sub.imageData || sub.imageUrl ? <img src={sub.imageData || sub.imageUrl} alt="" /> : sub.pdfData || sub.pdfUrl ? <div className="admin__subpdf">PDF</div> : <div className="admin__subpdf">—</div>}
               </div>
               <div className="admin__submeta">
                 <div className="admin__subtitle">{sub.title || <em style={{ color: 'var(--fg-faint)' }}>Untitled tracing</em>}</div>
@@ -161,10 +162,10 @@ function SubmissionsPanel({ state, setState }) {
             <h2 className="modal__title">{open.title || 'Untitled tracing'}</h2>
             <div style={{ marginTop: 8, color: 'var(--fg-dim)' }}>From <strong>{open.name}</strong> · <a href={`mailto:${open.email}`}>{open.email}</a></div>
             <div className="modal__trace">
-              {open.imageData ? (
-                <img src={open.imageData} alt="" style={{ maxWidth: '100%', display: 'block' }} />
-              ) : open.pdfData ? (
-                <embed src={open.pdfData} type="application/pdf" width="100%" height="500" />
+              {open.imageData || open.imageUrl ? (
+                <img src={open.imageData || open.imageUrl} alt="" style={{ maxWidth: '100%', display: 'block' }} />
+              ) : open.pdfData || open.pdfUrl ? (
+                <embed src={open.pdfData || open.pdfUrl} type="application/pdf" width="100%" height="500" />
               ) : null}
             </div>
             {open.notes && (

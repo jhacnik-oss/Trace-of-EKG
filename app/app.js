@@ -169,12 +169,7 @@ function ConnectionBanner({
   route
 }) {
   const isAdminRoute = ['admin', 'lecture', 'draft'].includes(route);
-  if (!DEMO_MODE) {
-    return /*#__PURE__*/React.createElement("div", {
-      className: "demo-banner demo-banner--live",
-      role: "status"
-    }, /*#__PURE__*/React.createElement("strong", null, "Live sync on."), /*#__PURE__*/React.createElement("span", null, "Responses, submissions, and admin changes sync across devices."));
-  }
+  if (!DEMO_MODE) return null;
   return /*#__PURE__*/React.createElement("div", {
     className: "demo-banner",
     role: "status"

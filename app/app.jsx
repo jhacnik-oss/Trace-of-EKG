@@ -122,14 +122,7 @@ function App() {
 
 function ConnectionBanner({ route }) {
   const isAdminRoute = ['admin', 'lecture', 'draft'].includes(route);
-  if (!DEMO_MODE) {
-    return (
-      <div className="demo-banner demo-banner--live" role="status">
-        <strong>Live sync on.</strong>
-        <span>Responses, submissions, and admin changes sync across devices.</span>
-      </div>
-    );
-  }
+  if (!DEMO_MODE) return null;
   return (
     <div className="demo-banner" role="status">
       <strong>Local demo.</strong>

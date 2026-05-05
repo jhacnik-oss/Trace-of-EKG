@@ -7,29 +7,37 @@ function GuestPage({
   state,
   setState
 }) {
+  const lectureDraftId = 'lecture-page-draft';
   const live = state.liveLesson;
-  const [draft, setDraft] = React.useState(live);
+  const [draft, setDraft] = React.useState(() => loadGuestDraft?.(lectureDraftId, state) || live);
   const [view, setView] = React.useState('setup'); // 'setup' | 'submitted'
+  const [saved, setSaved] = React.useState(false);
 
   // Keep draft in sync if admin updates the lesson externally.
-  React.useEffect(() => setDraft(live), [live.id]);
+  React.useEffect(() => {
+    const savedDraft = loadGuestDraft?.(lectureDraftId, state);
+    if (savedDraft) return;
+    setDraft(live);
+  }, [live.id]);
   const duration = draft.duration ?? LIVE_DURATION_S;
   const {
     remaining,
     openEnded
   } = useCountdown(live.liveStartedAt, live.duration ?? LIVE_DURATION_S);
   const isLive = live.liveStartedAt && (openEnded || remaining > 0) && !live.revealed;
-  const patch = p => setDraft(d => ({
-    ...d,
-    ...p
-  }));
-  const save = () => setState(s => ({
-    ...s,
-    liveLesson: {
-      ...s.liveLesson,
-      ...draft
-    }
-  }));
+  const patch = p => {
+    setDraft(d => ({
+      ...d,
+      ...p
+    }));
+    setSaved(false);
+  };
+  const save = () => {
+    const updated = saveGuestDraft(lectureDraftId, draft, setState);
+    setDraft(updated);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
   const goLive = () => setState(s => ({
     ...s,
     liveLesson: {
@@ -238,7 +246,7 @@ function GuestPage({
   }, /*#__PURE__*/React.createElement("button", {
     className: "btn btn--ghost",
     onClick: save
-  }, "Save draft"), !isLive && !live.revealed && /*#__PURE__*/React.createElement("button", {
+  }, saved ? '✓ Saved' : 'Save draft'), !isLive && !live.revealed && /*#__PURE__*/React.createElement("button", {
     className: "btn btn--primary",
     onClick: goLive
   }, "\u25B6 Go live ", duration ? `(${duration}s)` : '(open)'), isLive && /*#__PURE__*/React.createElement("button", {

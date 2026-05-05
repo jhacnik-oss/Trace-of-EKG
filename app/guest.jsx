@@ -4,19 +4,30 @@
 // After reveal, they submit the session for admin approval before it hits the archive.
 
 function GuestPage({ state, setState }) {
+  const lectureDraftId = 'lecture-page-draft';
   const live = state.liveLesson;
-  const [draft, setDraft] = React.useState(live);
+  const [draft, setDraft] = React.useState(() => loadGuestDraft?.(lectureDraftId, state) || live);
   const [view, setView] = React.useState('setup'); // 'setup' | 'submitted'
+  const [saved, setSaved] = React.useState(false);
 
   // Keep draft in sync if admin updates the lesson externally.
-  React.useEffect(() => setDraft(live), [live.id]);
+  React.useEffect(() => {
+    const savedDraft = loadGuestDraft?.(lectureDraftId, state);
+    if (savedDraft) return;
+    setDraft(live);
+  }, [live.id]);
 
   const duration = draft.duration ?? LIVE_DURATION_S;
   const { remaining, openEnded } = useCountdown(live.liveStartedAt, live.duration ?? LIVE_DURATION_S);
   const isLive = live.liveStartedAt && (openEnded || remaining > 0) && !live.revealed;
 
-  const patch = (p) => setDraft((d) => ({ ...d, ...p }));
-  const save   = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, ...draft } }));
+  const patch = (p) => { setDraft((d) => ({ ...d, ...p })); setSaved(false); };
+  const save = () => {
+    const updated = saveGuestDraft(lectureDraftId, draft, setState);
+    setDraft(updated);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
   const goLive = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, ...draft, liveStartedAt: Date.now(), revealed: false, responses: [] } }));
   const stop   = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, liveStartedAt: null, revealed: false } }));
   const reveal = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, revealed: true } }));
@@ -130,7 +141,7 @@ function GuestPage({ state, setState }) {
             <textarea rows={6} value={draft.bullets.join('\n')} onChange={(e) => patch({ bullets: e.target.value.split('\n') })} />
           </label>
           <div className="admin__actions">
-            <button className="btn btn--ghost" onClick={save}>Save draft</button>
+            <button className="btn btn--ghost" onClick={save}>{saved ? '✓ Saved' : 'Save draft'}</button>
             {!isLive && !live.revealed && (
               <button className="btn btn--primary" onClick={goLive}>
                 ▶ Go live {duration ? `(${duration}s)` : '(open)'}

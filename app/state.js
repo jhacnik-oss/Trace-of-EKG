@@ -147,7 +147,9 @@ const DEFAULT_STATE = {
   topics: TOPICS,
   drafts: [],
   // admin-saved lecture drafts: [{ id, title, topic, date, question, answer, bullets, imageData, pdfData, imageUrl, duration, savedAt }]
-  invites: [] // guest invite links: [{ id, presenterName, presenterEmail, topic, date, url, createdAt }]
+  invites: [],
+  // guest invite links: [{ id, presenterName, presenterEmail, topic, date, url, createdAt }]
+  guestDrafts: {} // inviteId -> guest lecturer draft saved from invite link
 };
 function loadState() {
   try {

@@ -1,12 +1,12 @@
 // Guest draft page — accessed via invite link only.
 // URL format: #draft?id=<inviteId>&topic=<topicId>&date=<YYYY-MM-DD>&name=<presenterName>
 //
-// Drafts are saved to a separate localStorage key (not main app state) because
-// guests have their own browsers. Keyed by invite ID so the same link always
-// loads the same in-progress draft.
+// Drafts are keyed by invite ID. Firebase mode saves them to shared state so
+// lecturers can return from another device and admins can see draft progress.
+// localStorage remains as an offline/browser backup.
 
 const GUEST_DRAFTS_KEY = 'ekg-guest-drafts-v1';
-function loadGuestDraft(id) {
+function loadLocalGuestDraft(id) {
   try {
     const all = JSON.parse(localStorage.getItem(GUEST_DRAFTS_KEY) || '{}');
     return all[id] || null;
@@ -14,7 +14,7 @@ function loadGuestDraft(id) {
     return null;
   }
 }
-function saveGuestDraft(id, data) {
+function saveLocalGuestDraft(id, data) {
   try {
     const all = JSON.parse(localStorage.getItem(GUEST_DRAFTS_KEY) || '{}');
     all[id] = {
@@ -23,6 +23,27 @@ function saveGuestDraft(id, data) {
     };
     localStorage.setItem(GUEST_DRAFTS_KEY, JSON.stringify(all));
   } catch {}
+}
+function loadGuestDraft(id, state) {
+  return (state.guestDrafts || {})[id] || loadLocalGuestDraft(id);
+}
+function saveGuestDraft(id, data, setState) {
+  const updated = {
+    ...data,
+    id,
+    savedAt: Date.now()
+  };
+  saveLocalGuestDraft(id, updated);
+  if (setState) {
+    setState(s => ({
+      ...s,
+      guestDrafts: {
+        ...(s.guestDrafts || {}),
+        [id]: updated
+      }
+    }));
+  }
+  return updated;
 }
 function DraftPage({
   state,
@@ -85,7 +106,7 @@ function DraftPage({
   const [view, setView] = React.useState('edit'); // 'edit' | 'submitted'
   const [saved, setSaved] = React.useState(false);
   const [draft, setDraft] = React.useState(() => {
-    const existing = loadGuestDraft(inviteId);
+    const existing = loadGuestDraft(inviteId, state);
     if (existing) return existing;
     return {
       id: inviteId,
@@ -99,7 +120,8 @@ function DraftPage({
       imageData: null,
       pdfData: null,
       imageUrl: '',
-      duration: 30
+      duration: 30,
+      savedAt: null
     };
   });
   const patch = p => {
@@ -114,19 +136,20 @@ function DraftPage({
   React.useEffect(() => {
     if (!inviteId) return;
     const t = setTimeout(() => {
-      saveGuestDraft(inviteId, draft);
+      saveGuestDraft(inviteId, draft, setState);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     }, 3000);
     return () => clearTimeout(t);
   }, [draft]);
   const save = () => {
-    saveGuestDraft(inviteId, draft);
+    const updated = saveGuestDraft(inviteId, draft, setState);
+    setDraft(updated);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
   const goLive = () => {
-    saveGuestDraft(inviteId, draft);
+    saveGuestDraft(inviteId, draft, setState);
     setState(s => ({
       ...s,
       liveLesson: {
@@ -175,7 +198,7 @@ function DraftPage({
   };
   const topicObj = state.topics.find(t => t.id === (inviteTopic || draft.topic));
   const duration = draft.duration ?? LIVE_DURATION_S;
-  const savedAt = loadGuestDraft(inviteId)?.savedAt;
+  const savedAt = ((state.guestDrafts || {})[inviteId] || draft)?.savedAt;
   if (view === 'submitted') {
     return /*#__PURE__*/React.createElement("section", {
       className: "admin",
@@ -444,5 +467,10 @@ function DraftPage({
   }, /*#__PURE__*/React.createElement("li", null, "Fill in your lecture content and save your progress."), /*#__PURE__*/React.createElement("li", null, "Return to this link any time before ", formatDate(inviteDate), " to keep editing."), /*#__PURE__*/React.createElement("li", null, "On presentation day, click ", /*#__PURE__*/React.createElement("strong", null, "Go live"), "."), /*#__PURE__*/React.createElement("li", null, "Residents submit their reads during the countdown."), /*#__PURE__*/React.createElement("li", null, "Click ", /*#__PURE__*/React.createElement("strong", null, "Reveal now"), " to show the answer and word cloud."), /*#__PURE__*/React.createElement("li", null, "Submit the session for the archive."))))));
 }
 Object.assign(window, {
-  DraftPage
+  DraftPage,
+  loadGuestDraft,
+  saveGuestDraft,
+  loadLocalGuestDraft,
+  saveLocalGuestDraft,
+  GUEST_DRAFTS_KEY
 });

@@ -1339,6 +1339,24 @@ function InvitesPanel({
     }));
     if (generated?.id === id) setGenerated(null);
   };
+  const loadGuestDraftToLive = (inv, draft) => {
+    if (!draft) return;
+    setState(s => ({
+      ...s,
+      liveLesson: {
+        ...s.liveLesson,
+        ...draft,
+        id: inv.id,
+        topic: draft.topic || inv.topic,
+        date: draft.date || inv.date,
+        presenterName: draft.presenterName || inv.presenterName,
+        responses: [],
+        revealed: false,
+        liveStartedAt: null
+      }
+    }));
+    alert('Guest draft loaded into "This Week". Open that tab to review or go live.');
+  };
   const copyLink = async (url, key) => {
     try {
       await navigator.clipboard.writeText(url);
@@ -1462,6 +1480,7 @@ Questions? Reply to this email.`);
   }, invites.map(inv => {
     const topic = state.topics.find(t => t.id === inv.topic);
     const isExpired = inv.date && new Date(inv.date) < new Date(new Date().toDateString());
+    const guestDraft = (state.guestDrafts || {})[inv.id];
     return /*#__PURE__*/React.createElement("li", {
       key: inv.id
     }, /*#__PURE__*/React.createElement("div", {
@@ -1490,10 +1509,18 @@ Questions? Reply to this email.`);
       style: {
         color: topic.color
       }
-    }, topic.name)), inv.presenterEmail && /*#__PURE__*/React.createElement(React.Fragment, null, " \xB7 ", inv.presenterEmail))), /*#__PURE__*/React.createElement("button", {
+    }, topic.name)), inv.presenterEmail && /*#__PURE__*/React.createElement(React.Fragment, null, " \xB7 ", inv.presenterEmail), guestDraft?.savedAt && /*#__PURE__*/React.createElement(React.Fragment, null, " \xB7 draft saved ", new Date(guestDraft.savedAt).toLocaleDateString()))), /*#__PURE__*/React.createElement("button", {
       className: "btn btn--ghost btn--sm",
       onClick: () => copyLink(inv.url, inv.id)
-    }, copied === inv.id ? '✓' : 'Copy'), inv.presenterEmail && /*#__PURE__*/React.createElement("a", {
+    }, copied === inv.id ? '✓' : 'Copy'), /*#__PURE__*/React.createElement("button", {
+      className: "btn btn--ghost btn--sm",
+      onClick: () => {
+        location.href = inv.url;
+      }
+    }, "Open draft"), guestDraft && /*#__PURE__*/React.createElement("button", {
+      className: "btn btn--primary btn--sm",
+      onClick: () => loadGuestDraftToLive(inv, guestDraft)
+    }, "Load draft \u2192"), inv.presenterEmail && /*#__PURE__*/React.createElement("a", {
       className: "btn btn--ghost btn--sm",
       href: buildMailto(inv),
       target: "_blank",

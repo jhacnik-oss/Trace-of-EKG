@@ -818,6 +818,25 @@ function InvitesPanel({ state, setState }) {
     if (generated?.id === id) setGenerated(null);
   };
 
+  const loadGuestDraftToLive = (inv, draft) => {
+    if (!draft) return;
+    setState((s) => ({
+      ...s,
+      liveLesson: {
+        ...s.liveLesson,
+        ...draft,
+        id: inv.id,
+        topic: draft.topic || inv.topic,
+        date: draft.date || inv.date,
+        presenterName: draft.presenterName || inv.presenterName,
+        responses: [],
+        revealed: false,
+        liveStartedAt: null,
+      },
+    }));
+    alert('Guest draft loaded into "This Week". Open that tab to review or go live.');
+  };
+
   const copyLink = async (url, key) => {
     try { await navigator.clipboard.writeText(url); } catch { }
     setCopied(key);
@@ -902,6 +921,7 @@ Questions? Reply to this email.`
           {invites.map((inv) => {
             const topic = state.topics.find((t) => t.id === inv.topic);
             const isExpired = inv.date && new Date(inv.date) < new Date(new Date().toDateString());
+            const guestDraft = (state.guestDrafts || {})[inv.id];
             return (
               <li key={inv.id}>
                 <div style={{ flex: 1 }}>
@@ -913,11 +933,20 @@ Questions? Reply to this email.`
                     {formatDate(inv.date)}
                     {topic && <> · <span style={{ color: topic.color }}>{topic.name}</span></>}
                     {inv.presenterEmail && <> · {inv.presenterEmail}</>}
+                    {guestDraft?.savedAt && <> · draft saved {new Date(guestDraft.savedAt).toLocaleDateString()}</>}
                   </div>
                 </div>
                 <button className="btn btn--ghost btn--sm" onClick={() => copyLink(inv.url, inv.id)}>
                   {copied === inv.id ? '✓' : 'Copy'}
                 </button>
+                <button className="btn btn--ghost btn--sm" onClick={() => { location.href = inv.url; }}>
+                  Open draft
+                </button>
+                {guestDraft && (
+                  <button className="btn btn--primary btn--sm" onClick={() => loadGuestDraftToLive(inv, guestDraft)}>
+                    Load draft →
+                  </button>
+                )}
                 {inv.presenterEmail && (
                   <a className="btn btn--ghost btn--sm" href={buildMailto(inv)} target="_blank" rel="noopener">Email</a>
                 )}

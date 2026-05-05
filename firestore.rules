@@ -28,10 +28,15 @@ service cloud.firestore {
         && request.resource.data.submissions.size() == resource.data.submissions.size() + 1;
     }
 
+    function onlyChangesGuestDrafts() {
+      return isSignedIn()
+        && changedKeys().hasOnly(["guestDrafts"]);
+    }
+
     match /settings/main {
       allow read: if isSignedIn();
       allow create, delete: if isAdmin();
-      allow update: if isAdmin() || onlyAddsLiveResponse() || onlyAddsSubmission();
+      allow update: if isAdmin() || onlyAddsLiveResponse() || onlyAddsSubmission() || onlyChangesGuestDrafts();
     }
 
     match /{document=**} {

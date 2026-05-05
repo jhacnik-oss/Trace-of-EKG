@@ -118,7 +118,8 @@ function AdminPage({
     }, count));
   })), tab === 'this-week' && /*#__PURE__*/React.createElement(ThisWeekPanel, {
     state: state,
-    setState: setState
+    setState: setState,
+    onOpenDrafts: () => setTab('drafts')
   }), tab === 'live-stream' && /*#__PURE__*/React.createElement(LiveStreamPanel, {
     state: state,
     setState: setState
@@ -313,7 +314,8 @@ Object.assign(window, {
 });
 function ThisWeekPanel({
   state,
-  setState
+  setState,
+  onOpenDrafts
 }) {
   const live = state.liveLesson;
   const [draft, setDraft] = React.useState(live);
@@ -335,6 +337,32 @@ function ThisWeekPanel({
       ...draft
     }
   }));
+  const saveAsDraft = () => {
+    const id = draft.draftId || 'draft-' + Date.now().toString(36);
+    const entry = {
+      ...draft,
+      id,
+      draftId: id,
+      savedAt: Date.now(),
+      liveStartedAt: null,
+      revealed: false,
+      responses: []
+    };
+    setState(s => {
+      const drafts = s.drafts || [];
+      const exists = drafts.find(x => x.id === entry.id);
+      return {
+        ...s,
+        liveLesson: {
+          ...s.liveLesson,
+          ...draft,
+          draftId: entry.id
+        },
+        drafts: exists ? drafts.map(x => x.id === entry.id ? entry : x) : [entry, ...drafts]
+      };
+    });
+    alert('Saved to Drafts.');
+  };
   const goLive = () => setState(s => ({
     ...s,
     liveLesson: {
@@ -487,7 +515,13 @@ function ThisWeekPanel({
   }, /*#__PURE__*/React.createElement("button", {
     className: "btn btn--ghost",
     onClick: save
-  }, "Save draft"), !isLive && !live.revealed && /*#__PURE__*/React.createElement("button", {
+  }, "Save this week"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn--ghost",
+    onClick: saveAsDraft
+  }, "Save as draft"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn--ghost",
+    onClick: onOpenDrafts
+  }, "Saved drafts (", (state.drafts || []).length, ")"), !isLive && !live.revealed && /*#__PURE__*/React.createElement("button", {
     className: "btn btn--primary",
     onClick: goLive
   }, "\u25B6 Go live ", duration ? `(${duration}s)` : '(open)'), isLive && /*#__PURE__*/React.createElement("button", {

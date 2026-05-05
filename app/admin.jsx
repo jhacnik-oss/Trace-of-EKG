@@ -110,7 +110,7 @@ function AdminPage({ state, setState }) {
         })}
       </div>
 
-      {tab === 'this-week' && <ThisWeekPanel state={state} setState={setState} />}
+      {tab === 'this-week' && <ThisWeekPanel state={state} setState={setState} onOpenDrafts={() => setTab('drafts')} />}
       {tab === 'live-stream' && <LiveStreamPanel state={state} setState={setState} />}
       {tab === 'drafts' && <DraftsPanel state={state} setState={setState} />}
       {tab === 'invites' && <InvitesPanel state={state} setState={setState} />}
@@ -239,7 +239,7 @@ function SubmissionsPanel({ state, setState }) {
 
 Object.assign(window, { SubmissionsPanel });
 
-function ThisWeekPanel({ state, setState }) {
+function ThisWeekPanel({ state, setState, onOpenDrafts }) {
   const live = state.liveLesson;
   const [draft, setDraft] = React.useState(live);
   React.useEffect(() => setDraft(live), [live.id]);
@@ -250,6 +250,30 @@ function ThisWeekPanel({ state, setState }) {
 
   const patch = (p) => setDraft((d) => ({ ...d, ...p }));
   const save = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, ...draft } }));
+  const saveAsDraft = () => {
+    const id = draft.draftId || 'draft-' + Date.now().toString(36);
+    const entry = {
+      ...draft,
+      id,
+      draftId: id,
+      savedAt: Date.now(),
+      liveStartedAt: null,
+      revealed: false,
+      responses: [],
+    };
+    setState((s) => {
+      const drafts = s.drafts || [];
+      const exists = drafts.find((x) => x.id === entry.id);
+      return {
+        ...s,
+        liveLesson: { ...s.liveLesson, ...draft, draftId: entry.id },
+        drafts: exists
+          ? drafts.map((x) => x.id === entry.id ? entry : x)
+          : [entry, ...drafts],
+      };
+    });
+    alert('Saved to Drafts.');
+  };
   const goLive = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, ...draft, liveStartedAt: Date.now(), revealed: false, responses: [] } }));
   const stop = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, liveStartedAt: null, revealed: false } }));
   const reveal = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, revealed: true } }));
@@ -322,7 +346,9 @@ function ThisWeekPanel({ state, setState }) {
           <textarea rows={6} value={draft.bullets.join('\n')} onChange={(e) => patch({ bullets: e.target.value.split('\n') })} />
         </label>
         <div className="admin__actions">
-          <button className="btn btn--ghost" onClick={save}>Save draft</button>
+          <button className="btn btn--ghost" onClick={save}>Save this week</button>
+          <button className="btn btn--ghost" onClick={saveAsDraft}>Save as draft</button>
+          <button className="btn btn--ghost" onClick={onOpenDrafts}>Saved drafts ({(state.drafts || []).length})</button>
           {!isLive && !live.revealed && (
             <button className="btn btn--primary" onClick={goLive}>
               ▶ Go live {duration ? `(${duration}s)` : '(open)'}

@@ -85,7 +85,6 @@ function App() {
           <button className={`nav__link ${route === 'home' ? 'nav__link--on' : ''}`} onClick={() => go('home')}>Live</button>
           <button className={`nav__link ${route === 'archive' ? 'nav__link--on' : ''}`} onClick={() => go('archive')}>Archive</button>
           <button className={`nav__link ${route === 'submit' ? 'nav__link--on' : ''}`} onClick={() => go('submit')}>Submit</button>
-          <button className={`nav__link ${route === 'lecture' ? 'nav__link--on' : ''}`} onClick={() => go('lecture')}>Lecture</button>
           <button
             className="nav__darkmode"
             onClick={() => patchTweak('dark', !tweaks.dark)}

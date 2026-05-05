@@ -117,9 +117,6 @@ function App() {
     className: `nav__link ${route === 'submit' ? 'nav__link--on' : ''}`,
     onClick: () => go('submit')
   }, "Submit"), /*#__PURE__*/React.createElement("button", {
-    className: `nav__link ${route === 'lecture' ? 'nav__link--on' : ''}`,
-    onClick: () => go('lecture')
-  }, "Lecture"), /*#__PURE__*/React.createElement("button", {
     className: "nav__darkmode",
     onClick: () => patchTweak('dark', !tweaks.dark),
     "aria-label": tweaks.dark ? 'Switch to light mode' : 'Switch to dark mode'

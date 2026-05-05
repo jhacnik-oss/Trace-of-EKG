@@ -141,6 +141,7 @@ function SubmitPage({ state, setState }) {
 
           <div className="submit__field submit__field--full">
             <span className="submit__lab">EKG tracing <em className="submit__optional">PNG, JPG, or PDF · 8MB max</em></span>
+            <div className="submit__warning">No PHI, no patient identifiers.</div>
             <div className="submit__drop">
               {(form.imageData || form.pdfData) ? (
                 <div className="submit__preview">

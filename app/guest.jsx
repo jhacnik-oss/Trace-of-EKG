@@ -1,5 +1,5 @@
 // Guest lecturer page — no password required.
-// Guests can edit this week's content, go live, reveal, reset,
+// Guests can edit this week's content, go live, reveal, end, reset,
 // and view the live response stream (with names).
 // After reveal, they submit the session for admin approval before it hits the archive.
 
@@ -29,7 +29,11 @@ function GuestPage({ state, setState }) {
     setTimeout(() => setSaved(false), 2000);
   };
   const goLive = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, ...draft, liveStartedAt: Date.now(), revealed: false, responses: [] } }));
-  const stop   = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, liveStartedAt: null, revealed: false } }));
+  const endSession = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, liveStartedAt: null, revealed: false } }));
+  const resetTeachingState = () => {
+    if (!confirm('Reset this session and clear collected responses?')) return;
+    setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, liveStartedAt: null, revealed: false, responses: [] } }));
+  };
   const reveal = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, revealed: true } }));
 
   const submitForReview = () => {
@@ -112,6 +116,7 @@ function GuestPage({ state, setState }) {
           </div>
           <label className="admin__field">
             <span>EKG image or PDF (upload)</span>
+            <div className="admin__warning">No PHI, no patient identifiers.</div>
             <div className="admin__upload">
               <input type="file" accept="image/*,application/pdf" onChange={async (e) => {
                 const f = e.target.files?.[0]; if (!f) return;
@@ -148,7 +153,10 @@ function GuestPage({ state, setState }) {
               </button>
             )}
             {isLive && <button className="btn btn--primary" onClick={reveal}>Reveal now</button>}
-            {(isLive || live.revealed) && <button className="btn btn--danger" onClick={stop}>Reset to idle</button>}
+            {(isLive || live.revealed) && <button className="btn btn--ghost" onClick={endSession}>End session</button>}
+            {(isLive || live.revealed || live.responses?.length > 0) && (
+              <button className="btn btn--danger" onClick={resetTeachingState}>Reset</button>
+            )}
           </div>
 
           {/* Submit for review — only shown after reveal */}

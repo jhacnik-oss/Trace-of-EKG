@@ -1,7 +1,7 @@
-// Guest draft page — accessed via invite link only.
+// Guest presenter panel — accessed via invite link only.
 // URL format: #draft?id=<inviteId>&topic=<topicId>&date=<YYYY-MM-DD>&name=<presenterName>
 //
-// Drafts are keyed by invite ID. Firebase mode saves them to shared state so
+// Presenter panel work is keyed by invite ID. Firebase mode saves it to shared state so
 // lecturers can return from another device and admins can see draft progress.
 // localStorage remains as an offline/browser backup.
 
@@ -162,7 +162,7 @@ function DraftPage({
       }
     }));
   };
-  const stop = () => setState(s => ({
+  const endSession = () => setState(s => ({
     ...s,
     liveLesson: {
       ...s.liveLesson,
@@ -170,6 +170,18 @@ function DraftPage({
       revealed: false
     }
   }));
+  const resetTeachingState = () => {
+    if (!confirm('Reset this session and clear collected responses?')) return;
+    setState(s => ({
+      ...s,
+      liveLesson: {
+        ...s.liveLesson,
+        liveStartedAt: null,
+        revealed: false,
+        responses: []
+      }
+    }));
+  };
   const reveal = () => setState(s => ({
     ...s,
     liveLesson: {
@@ -181,6 +193,7 @@ function DraftPage({
     const entry = {
       ...state.liveLesson,
       presenterName: draft.presenterName,
+      presenterInviteId: inviteId,
       id: 'pending-' + Date.now().toString(36),
       pendingAt: new Date().toISOString()
     };
@@ -231,7 +244,7 @@ function DraftPage({
     className: "admin__head"
   }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "hero__label"
-  }, "Presenter draft"), /*#__PURE__*/React.createElement("h2", {
+  }, "Presenter Panel"), /*#__PURE__*/React.createElement("h2", {
     className: "admin__title"
   }, draft.presenterName || 'Your lecture')), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -259,7 +272,7 @@ function DraftPage({
     className: "dot dot--done"
   }), " Revealed \xB7 ", live.responses.length, " responses") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("span", {
     className: "dot dot--idle"
-  }), " Draft", savedAt ? ` · saved ${new Date(savedAt).toLocaleTimeString()}` : ' · unsaved')), /*#__PURE__*/React.createElement("div", {
+  }), " Presenter Panel", savedAt ? ` · saved ${new Date(savedAt).toLocaleTimeString()}` : ' · unsaved')), /*#__PURE__*/React.createElement("div", {
     className: "admin__grid"
   }, /*#__PURE__*/React.createElement("div", {
     className: "admin__col"
@@ -320,6 +333,8 @@ function DraftPage({
   }, "Open"))), /*#__PURE__*/React.createElement("label", {
     className: "admin__field"
   }, /*#__PURE__*/React.createElement("span", null, "EKG image or PDF"), /*#__PURE__*/React.createElement("div", {
+    className: "admin__warning"
+  }, "No PHI, no patient identifiers."), /*#__PURE__*/React.createElement("div", {
     className: "admin__upload"
   }, /*#__PURE__*/React.createElement("input", {
     type: "file",
@@ -386,8 +401,11 @@ function DraftPage({
     className: "btn btn--primary",
     onClick: reveal
   }, "Reveal now"), (isLive || live.revealed) && /*#__PURE__*/React.createElement("button", {
+    className: "btn btn--ghost",
+    onClick: endSession
+  }, "End session"), (isLive || live.revealed || live.responses?.length > 0) && /*#__PURE__*/React.createElement("button", {
     className: "btn btn--danger",
-    onClick: stop
+    onClick: resetTeachingState
   }, "Reset")), live.revealed && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 24,

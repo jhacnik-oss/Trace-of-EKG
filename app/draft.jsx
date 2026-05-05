@@ -1,7 +1,7 @@
-// Guest draft page — accessed via invite link only.
+// Guest presenter panel — accessed via invite link only.
 // URL format: #draft?id=<inviteId>&topic=<topicId>&date=<YYYY-MM-DD>&name=<presenterName>
 //
-// Drafts are keyed by invite ID. Firebase mode saves them to shared state so
+// Presenter panel work is keyed by invite ID. Firebase mode saves it to shared state so
 // lecturers can return from another device and admins can see draft progress.
 // localStorage remains as an offline/browser backup.
 
@@ -128,13 +128,18 @@ function DraftPage({ state, setState, params }) {
     }));
   };
 
-  const stop = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, liveStartedAt: null, revealed: false } }));
+  const endSession = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, liveStartedAt: null, revealed: false } }));
+  const resetTeachingState = () => {
+    if (!confirm('Reset this session and clear collected responses?')) return;
+    setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, liveStartedAt: null, revealed: false, responses: [] } }));
+  };
   const reveal = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, revealed: true } }));
 
   const submitForReview = () => {
     const entry = {
       ...state.liveLesson,
       presenterName: draft.presenterName,
+      presenterInviteId: inviteId,
       id: 'pending-' + Date.now().toString(36),
       pendingAt: new Date().toISOString(),
     };
@@ -166,7 +171,7 @@ function DraftPage({ state, setState, params }) {
     <section className="admin">
       <div className="admin__head">
         <div>
-          <div className="hero__label">Presenter draft</div>
+          <div className="hero__label">Presenter Panel</div>
           <h2 className="admin__title">{draft.presenterName || 'Your lecture'}</h2>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -180,7 +185,7 @@ function DraftPage({ state, setState, params }) {
           ? <><span className="dot dot--live" /> Live · {openEnded ? 'Open' : `${Math.ceil(remaining)}s`} · {live.responses.length} responses</>
           : live.revealed
           ? <><span className="dot dot--done" /> Revealed · {live.responses.length} responses</>
-          : <><span className="dot dot--idle" /> Draft{savedAt ? ` · saved ${new Date(savedAt).toLocaleTimeString()}` : ' · unsaved'}</>}
+          : <><span className="dot dot--idle" /> Presenter Panel{savedAt ? ` · saved ${new Date(savedAt).toLocaleTimeString()}` : ' · unsaved'}</>}
       </div>
 
       <div className="admin__grid">
@@ -220,6 +225,7 @@ function DraftPage({ state, setState, params }) {
           </div>
           <label className="admin__field">
             <span>EKG image or PDF</span>
+            <div className="admin__warning">No PHI, no patient identifiers.</div>
             <div className="admin__upload">
               <input type="file" accept="image/*,application/pdf" onChange={async (e) => {
                 const f = e.target.files?.[0]; if (!f) return;
@@ -259,7 +265,10 @@ function DraftPage({ state, setState, params }) {
               </button>
             )}
             {isLive && <button className="btn btn--primary" onClick={reveal}>Reveal now</button>}
-            {(isLive || live.revealed) && <button className="btn btn--danger" onClick={stop}>Reset</button>}
+            {(isLive || live.revealed) && <button className="btn btn--ghost" onClick={endSession}>End session</button>}
+            {(isLive || live.revealed || live.responses?.length > 0) && (
+              <button className="btn btn--danger" onClick={resetTeachingState}>Reset</button>
+            )}
           </div>
 
           {live.revealed && (

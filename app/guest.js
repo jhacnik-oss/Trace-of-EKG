@@ -1,5 +1,5 @@
 // Guest lecturer page — no password required.
-// Guests can edit this week's content, go live, reveal, reset,
+// Guests can edit this week's content, go live, reveal, end, reset,
 // and view the live response stream (with names).
 // After reveal, they submit the session for admin approval before it hits the archive.
 
@@ -48,7 +48,7 @@ function GuestPage({
       responses: []
     }
   }));
-  const stop = () => setState(s => ({
+  const endSession = () => setState(s => ({
     ...s,
     liveLesson: {
       ...s.liveLesson,
@@ -56,6 +56,18 @@ function GuestPage({
       revealed: false
     }
   }));
+  const resetTeachingState = () => {
+    if (!confirm('Reset this session and clear collected responses?')) return;
+    setState(s => ({
+      ...s,
+      liveLesson: {
+        ...s.liveLesson,
+        liveStartedAt: null,
+        revealed: false,
+        responses: []
+      }
+    }));
+  };
   const reveal = () => setState(s => ({
     ...s,
     liveLesson: {
@@ -187,6 +199,8 @@ function GuestPage({
   }, "Open \u2014 no timer"))), /*#__PURE__*/React.createElement("label", {
     className: "admin__field"
   }, /*#__PURE__*/React.createElement("span", null, "EKG image or PDF (upload)"), /*#__PURE__*/React.createElement("div", {
+    className: "admin__warning"
+  }, "No PHI, no patient identifiers."), /*#__PURE__*/React.createElement("div", {
     className: "admin__upload"
   }, /*#__PURE__*/React.createElement("input", {
     type: "file",
@@ -253,9 +267,12 @@ function GuestPage({
     className: "btn btn--primary",
     onClick: reveal
   }, "Reveal now"), (isLive || live.revealed) && /*#__PURE__*/React.createElement("button", {
+    className: "btn btn--ghost",
+    onClick: endSession
+  }, "End session"), (isLive || live.revealed || live.responses?.length > 0) && /*#__PURE__*/React.createElement("button", {
     className: "btn btn--danger",
-    onClick: stop
-  }, "Reset to idle")), live.revealed && /*#__PURE__*/React.createElement("div", {
+    onClick: resetTeachingState
+  }, "Reset")), live.revealed && /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 24,
       padding: '20px 24px',

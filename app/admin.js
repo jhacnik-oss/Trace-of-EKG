@@ -107,8 +107,8 @@ function AdminPage({
     onClick: signOut
   }, "Sign out")), /*#__PURE__*/React.createElement("div", {
     className: "admin__tabs"
-  }, ['this-week', 'live-stream', 'drafts', 'invites', 'approvals', 'submissions', 'schedule', 'archive', 'topics'].map(t => {
-    const count = t === 'submissions' ? (state.submissions || []).filter(x => x.status === 'new').length : t === 'approvals' ? (state.pendingLessons || []).length : 0;
+  }, ['this-week', 'live-stream', 'drafts', 'invites', 'upcoming-presenters', 'approvals', 'submissions', 'schedule', 'archive', 'topics'].map(t => {
+    const count = t === 'submissions' ? (state.submissions || []).filter(x => x.status === 'new').length : t === 'approvals' ? (state.pendingLessons || []).length : t === 'upcoming-presenters' ? (state.invites || []).length : 0;
     return /*#__PURE__*/React.createElement("button", {
       key: t,
       className: `admin__tab ${tab === t ? 'admin__tab--on' : ''}`,
@@ -129,6 +129,8 @@ function AdminPage({
   }), tab === 'invites' && /*#__PURE__*/React.createElement(InvitesPanel, {
     state: state,
     setState: setState
+  }), tab === 'upcoming-presenters' && /*#__PURE__*/React.createElement(UpcomingPresentersPanel, {
+    state: state
   }), tab === 'approvals' && /*#__PURE__*/React.createElement(ApprovalsPanel, {
     state: state,
     setState: setState
@@ -363,6 +365,23 @@ function ThisWeekPanel({
     });
     alert('Saved to Drafts.');
   };
+  const duplicateAsDraft = () => {
+    const id = 'draft-' + Date.now().toString(36);
+    const entry = {
+      ...draft,
+      id,
+      draftId: id,
+      savedAt: Date.now(),
+      liveStartedAt: null,
+      revealed: false,
+      responses: []
+    };
+    setState(s => ({
+      ...s,
+      drafts: [entry, ...(s.drafts || [])]
+    }));
+    alert('Duplicated current lesson as a new draft.');
+  };
   const goLive = () => setState(s => ({
     ...s,
     liveLesson: {
@@ -373,7 +392,7 @@ function ThisWeekPanel({
       responses: []
     }
   }));
-  const stop = () => setState(s => ({
+  const endSession = () => setState(s => ({
     ...s,
     liveLesson: {
       ...s.liveLesson,
@@ -381,6 +400,18 @@ function ThisWeekPanel({
       revealed: false
     }
   }));
+  const resetTeachingState = () => {
+    if (!confirm('Reset this session and clear collected responses?')) return;
+    setState(s => ({
+      ...s,
+      liveLesson: {
+        ...s.liveLesson,
+        liveStartedAt: null,
+        revealed: false,
+        responses: []
+      }
+    }));
+  };
   const reveal = () => setState(s => ({
     ...s,
     liveLesson: {
@@ -456,6 +487,8 @@ function ThisWeekPanel({
   }))), /*#__PURE__*/React.createElement("label", {
     className: "admin__field"
   }, /*#__PURE__*/React.createElement("span", null, "EKG image or PDF (upload)"), /*#__PURE__*/React.createElement("div", {
+    className: "admin__warning"
+  }, "No PHI, no patient identifiers."), /*#__PURE__*/React.createElement("div", {
     className: "admin__upload"
   }, /*#__PURE__*/React.createElement("input", {
     type: "file",
@@ -520,6 +553,9 @@ function ThisWeekPanel({
     onClick: saveAsDraft
   }, "Save as draft"), /*#__PURE__*/React.createElement("button", {
     className: "btn btn--ghost",
+    onClick: duplicateAsDraft
+  }, "Duplicate current lesson as draft"), /*#__PURE__*/React.createElement("button", {
+    className: "btn btn--ghost",
     onClick: onOpenDrafts
   }, "Saved drafts (", (state.drafts || []).length, ")"), !isLive && !live.revealed && /*#__PURE__*/React.createElement("button", {
     className: "btn btn--primary",
@@ -528,9 +564,12 @@ function ThisWeekPanel({
     className: "btn btn--primary",
     onClick: reveal
   }, "Reveal now"), (isLive || live.revealed) && /*#__PURE__*/React.createElement("button", {
+    className: "btn btn--ghost",
+    onClick: endSession
+  }, "End session"), (isLive || live.revealed || live.responses?.length > 0) && /*#__PURE__*/React.createElement("button", {
     className: "btn btn--danger",
-    onClick: stop
-  }, "Reset to idle"))), /*#__PURE__*/React.createElement("div", {
+    onClick: resetTeachingState
+  }, "Reset"))), /*#__PURE__*/React.createElement("div", {
     className: "admin__col"
   }, /*#__PURE__*/React.createElement("div", {
     className: "admin__preview"
@@ -908,7 +947,8 @@ function ApprovalsPanel({
   const approve = lesson => {
     const archived = {
       ...lesson,
-      id: lesson.id.replace('pending-', 'w')
+      id: lesson.id.replace('pending-', 'w'),
+      approvedAt: new Date().toISOString()
     };
     setState(s => ({
       ...s,
@@ -1103,6 +1143,8 @@ function DraftEditForm({
   })), /*#__PURE__*/React.createElement("label", {
     className: "admin__field"
   }, /*#__PURE__*/React.createElement("span", null, "EKG image or PDF"), /*#__PURE__*/React.createElement("div", {
+    className: "admin__warning"
+  }, "No PHI, no patient identifiers."), /*#__PURE__*/React.createElement("div", {
     className: "admin__upload"
   }, /*#__PURE__*/React.createElement("input", {
     type: "file",
@@ -1347,6 +1389,7 @@ function InvitesPanel({
         ...s.liveLesson,
         ...draft,
         id: inv.id,
+        presenterInviteId: inv.id,
         topic: draft.topic || inv.topic,
         date: draft.date || inv.date,
         presenterName: draft.presenterName || inv.presenterName,
@@ -1355,7 +1398,7 @@ function InvitesPanel({
         liveStartedAt: null
       }
     }));
-    alert('Guest draft loaded into "This Week". Open that tab to review or go live.');
+    alert('Presenter panel saved content loaded into "This Week". Open that tab to review or go live.');
   };
   const copyLink = async (url, key) => {
     try {
@@ -1372,7 +1415,7 @@ function InvitesPanel({
 You're invited to present at Trace of EKG on ${formatDate(inv.date)}.
 Topic: ${topicObj?.name || inv.topic}
 
-Prepare your lecture using this link:
+Prepare your lecture in the Presenter Panel:
 ${inv.url}
 
 You can save your progress and return to this link any time before your presentation date. On the day, click Go Live directly from this page.
@@ -1517,10 +1560,10 @@ Questions? Reply to this email.`);
       onClick: () => {
         location.href = inv.url;
       }
-    }, "Open draft"), guestDraft && /*#__PURE__*/React.createElement("button", {
+    }, "Open panel"), guestDraft && /*#__PURE__*/React.createElement("button", {
       className: "btn btn--primary btn--sm",
       onClick: () => loadGuestDraftToLive(inv, guestDraft)
-    }, "Load draft \u2192"), inv.presenterEmail && /*#__PURE__*/React.createElement("a", {
+    }, "Load panel \u2192"), inv.presenterEmail && /*#__PURE__*/React.createElement("a", {
       className: "btn btn--ghost btn--sm",
       href: buildMailto(inv),
       target: "_blank",
@@ -1531,9 +1574,70 @@ Questions? Reply to this email.`);
     }, "\xD7"));
   }))));
 }
+function getPresenterStatus(inv, state) {
+  const guestDraft = (state.guestDrafts || {})[inv.id];
+  const pending = (state.pendingLessons || []).find(lesson => lesson.presenterInviteId === inv.id);
+  const approved = (state.lessons || []).find(lesson => lesson.presenterInviteId === inv.id);
+  if (approved) return {
+    key: 'approved',
+    label: 'approved',
+    at: approved.approvedAt || approved.pendingAt
+  };
+  if (pending) return {
+    key: 'submitted',
+    label: 'submitted',
+    at: pending.pendingAt
+  };
+  if (guestDraft?.savedAt) return {
+    key: 'draft-saved',
+    label: 'draft saved',
+    at: guestDraft.savedAt
+  };
+  return {
+    key: 'not-opened',
+    label: 'not opened',
+    at: inv.createdAt
+  };
+}
+function UpcomingPresentersPanel({
+  state
+}) {
+  const invites = [...(state.invites || [])].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  if (invites.length === 0) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "admin__empty"
+    }, "No presenters invited yet.");
+  }
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "admin__streamhead"
+  }, /*#__PURE__*/React.createElement("h3", {
+    className: "admin__sub2"
+  }, "Upcoming presenters")), /*#__PURE__*/React.createElement("ul", {
+    className: "admin__presenters"
+  }, invites.map(inv => {
+    const topic = state.topics.find(t => t.id === inv.topic);
+    const status = getPresenterStatus(inv, state);
+    const statusDate = status.at ? typeof status.at === 'number' ? new Date(status.at) : new Date(status.at) : null;
+    return /*#__PURE__*/React.createElement("li", {
+      key: inv.id,
+      className: "admin__presenter"
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      className: "admin__presentername"
+    }, inv.presenterName), /*#__PURE__*/React.createElement("div", {
+      className: "admin__presentermeta"
+    }, formatDate(inv.date), topic && /*#__PURE__*/React.createElement(React.Fragment, null, " \xB7 ", /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: topic.color
+      }
+    }, topic.name)), inv.presenterEmail && /*#__PURE__*/React.createElement(React.Fragment, null, " \xB7 ", inv.presenterEmail))), /*#__PURE__*/React.createElement("div", {
+      className: `admin__presenterstatus admin__presenterstatus--${status.key}`
+    }, /*#__PURE__*/React.createElement("span", null, status.label), statusDate && status.key !== 'not-opened' && /*#__PURE__*/React.createElement("small", null, statusDate.toLocaleDateString())));
+  })));
+}
 Object.assign(window, {
   AdminPage,
   ApprovalsPanel,
   DraftsPanel,
-  InvitesPanel
+  InvitesPanel,
+  UpcomingPresentersPanel
 });

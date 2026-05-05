@@ -95,11 +95,13 @@ function AdminPage({ state, setState }) {
         <button className="btn btn--ghost" onClick={signOut}>Sign out</button>
       </div>
       <div className="admin__tabs">
-        {['this-week', 'live-stream', 'drafts', 'invites', 'approvals', 'submissions', 'schedule', 'archive', 'topics'].map((t) => {
+        {['this-week', 'live-stream', 'drafts', 'invites', 'upcoming-presenters', 'approvals', 'submissions', 'schedule', 'archive', 'topics'].map((t) => {
           const count = t === 'submissions'
             ? (state.submissions || []).filter((x) => x.status === 'new').length
             : t === 'approvals'
             ? (state.pendingLessons || []).length
+            : t === 'upcoming-presenters'
+            ? (state.invites || []).length
             : 0;
           return (
             <button key={t} className={`admin__tab ${tab === t ? 'admin__tab--on' : ''}`} onClick={() => setTab(t)}>
@@ -114,6 +116,7 @@ function AdminPage({ state, setState }) {
       {tab === 'live-stream' && <LiveStreamPanel state={state} setState={setState} />}
       {tab === 'drafts' && <DraftsPanel state={state} setState={setState} />}
       {tab === 'invites' && <InvitesPanel state={state} setState={setState} />}
+      {tab === 'upcoming-presenters' && <UpcomingPresentersPanel state={state} />}
       {tab === 'approvals' && <ApprovalsPanel state={state} setState={setState} />}
       {tab === 'submissions' && <SubmissionsPanel state={state} setState={setState} />}
       {tab === 'schedule' && <SchedulePanel state={state} setState={setState} />}
@@ -274,8 +277,26 @@ function ThisWeekPanel({ state, setState, onOpenDrafts }) {
     });
     alert('Saved to Drafts.');
   };
+  const duplicateAsDraft = () => {
+    const id = 'draft-' + Date.now().toString(36);
+    const entry = {
+      ...draft,
+      id,
+      draftId: id,
+      savedAt: Date.now(),
+      liveStartedAt: null,
+      revealed: false,
+      responses: [],
+    };
+    setState((s) => ({ ...s, drafts: [entry, ...(s.drafts || [])] }));
+    alert('Duplicated current lesson as a new draft.');
+  };
   const goLive = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, ...draft, liveStartedAt: Date.now(), revealed: false, responses: [] } }));
-  const stop = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, liveStartedAt: null, revealed: false } }));
+  const endSession = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, liveStartedAt: null, revealed: false } }));
+  const resetTeachingState = () => {
+    if (!confirm('Reset this session and clear collected responses?')) return;
+    setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, liveStartedAt: null, revealed: false, responses: [] } }));
+  };
   const reveal = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, revealed: true } }));
 
   return (
@@ -318,6 +339,7 @@ function ThisWeekPanel({ state, setState, onOpenDrafts }) {
         </div>
         <label className="admin__field">
           <span>EKG image or PDF (upload)</span>
+          <div className="admin__warning">No PHI, no patient identifiers.</div>
           <div className="admin__upload">
             <input type="file" accept="image/*,application/pdf" onChange={async (e) => {
               const f = e.target.files?.[0]; if (!f) return;
@@ -348,6 +370,7 @@ function ThisWeekPanel({ state, setState, onOpenDrafts }) {
         <div className="admin__actions">
           <button className="btn btn--ghost" onClick={save}>Save this week</button>
           <button className="btn btn--ghost" onClick={saveAsDraft}>Save as draft</button>
+          <button className="btn btn--ghost" onClick={duplicateAsDraft}>Duplicate current lesson as draft</button>
           <button className="btn btn--ghost" onClick={onOpenDrafts}>Saved drafts ({(state.drafts || []).length})</button>
           {!isLive && !live.revealed && (
             <button className="btn btn--primary" onClick={goLive}>
@@ -355,7 +378,10 @@ function ThisWeekPanel({ state, setState, onOpenDrafts }) {
             </button>
           )}
           {isLive && <button className="btn btn--primary" onClick={reveal}>Reveal now</button>}
-          {(isLive || live.revealed) && <button className="btn btn--danger" onClick={stop}>Reset to idle</button>}
+          {(isLive || live.revealed) && <button className="btn btn--ghost" onClick={endSession}>End session</button>}
+          {(isLive || live.revealed || live.responses?.length > 0) && (
+            <button className="btn btn--danger" onClick={resetTeachingState}>Reset</button>
+          )}
         </div>
       </div>
       <div className="admin__col">
@@ -544,7 +570,7 @@ function ApprovalsPanel({ state, setState }) {
   const [editing, setEditing] = React.useState(null);
 
   const approve = (lesson) => {
-    const archived = { ...lesson, id: lesson.id.replace('pending-', 'w') };
+    const archived = { ...lesson, id: lesson.id.replace('pending-', 'w'), approvedAt: new Date().toISOString() };
     setState((s) => ({
       ...s,
       lessons: [archived, ...s.lessons],
@@ -651,6 +677,7 @@ function DraftEditForm({ draft: initialDraft, state, onSave, onCancel }) {
         <input value={d.question} onChange={(e) => patch({ question: e.target.value })} /></label>
       <label className="admin__field">
         <span>EKG image or PDF</span>
+        <div className="admin__warning">No PHI, no patient identifiers.</div>
         <div className="admin__upload">
           <input type="file" accept="image/*,application/pdf" onChange={async (e) => {
             const f = e.target.files?.[0]; if (!f) return;
@@ -826,6 +853,7 @@ function InvitesPanel({ state, setState }) {
         ...s.liveLesson,
         ...draft,
         id: inv.id,
+        presenterInviteId: inv.id,
         topic: draft.topic || inv.topic,
         date: draft.date || inv.date,
         presenterName: draft.presenterName || inv.presenterName,
@@ -834,7 +862,7 @@ function InvitesPanel({ state, setState }) {
         liveStartedAt: null,
       },
     }));
-    alert('Guest draft loaded into "This Week". Open that tab to review or go live.');
+    alert('Presenter panel saved content loaded into "This Week". Open that tab to review or go live.');
   };
 
   const copyLink = async (url, key) => {
@@ -852,7 +880,7 @@ function InvitesPanel({ state, setState }) {
 You're invited to present at Trace of EKG on ${formatDate(inv.date)}.
 Topic: ${topicObj?.name || inv.topic}
 
-Prepare your lecture using this link:
+Prepare your lecture in the Presenter Panel:
 ${inv.url}
 
 You can save your progress and return to this link any time before your presentation date. On the day, click Go Live directly from this page.
@@ -940,11 +968,11 @@ Questions? Reply to this email.`
                   {copied === inv.id ? '✓' : 'Copy'}
                 </button>
                 <button className="btn btn--ghost btn--sm" onClick={() => { location.href = inv.url; }}>
-                  Open draft
+                  Open panel
                 </button>
                 {guestDraft && (
                   <button className="btn btn--primary btn--sm" onClick={() => loadGuestDraftToLive(inv, guestDraft)}>
-                    Load draft →
+                    Load panel →
                   </button>
                 )}
                 {inv.presenterEmail && (
@@ -960,4 +988,57 @@ Questions? Reply to this email.`
   );
 }
 
-Object.assign(window, { AdminPage, ApprovalsPanel, DraftsPanel, InvitesPanel });
+function getPresenterStatus(inv, state) {
+  const guestDraft = (state.guestDrafts || {})[inv.id];
+  const pending = (state.pendingLessons || []).find((lesson) => lesson.presenterInviteId === inv.id);
+  const approved = (state.lessons || []).find((lesson) => lesson.presenterInviteId === inv.id);
+  if (approved) return { key: 'approved', label: 'approved', at: approved.approvedAt || approved.pendingAt };
+  if (pending) return { key: 'submitted', label: 'submitted', at: pending.pendingAt };
+  if (guestDraft?.savedAt) return { key: 'draft-saved', label: 'draft saved', at: guestDraft.savedAt };
+  return { key: 'not-opened', label: 'not opened', at: inv.createdAt };
+}
+
+function UpcomingPresentersPanel({ state }) {
+  const invites = [...(state.invites || [])].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+  if (invites.length === 0) {
+    return <div className="admin__empty">No presenters invited yet.</div>;
+  }
+
+  return (
+    <div>
+      <div className="admin__streamhead">
+        <h3 className="admin__sub2">Upcoming presenters</h3>
+      </div>
+      <ul className="admin__presenters">
+        {invites.map((inv) => {
+          const topic = state.topics.find((t) => t.id === inv.topic);
+          const status = getPresenterStatus(inv, state);
+          const statusDate = status.at
+            ? (typeof status.at === 'number' ? new Date(status.at) : new Date(status.at))
+            : null;
+          return (
+            <li key={inv.id} className="admin__presenter">
+              <div>
+                <div className="admin__presentername">{inv.presenterName}</div>
+                <div className="admin__presentermeta">
+                  {formatDate(inv.date)}
+                  {topic && <> · <span style={{ color: topic.color }}>{topic.name}</span></>}
+                  {inv.presenterEmail && <> · {inv.presenterEmail}</>}
+                </div>
+              </div>
+              <div className={`admin__presenterstatus admin__presenterstatus--${status.key}`}>
+                <span>{status.label}</span>
+                {statusDate && status.key !== 'not-opened' && (
+                  <small>{statusDate.toLocaleDateString()}</small>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+Object.assign(window, { AdminPage, ApprovalsPanel, DraftsPanel, InvitesPanel, UpcomingPresentersPanel });

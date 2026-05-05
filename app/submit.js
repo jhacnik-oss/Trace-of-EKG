@@ -215,6 +215,8 @@ function SubmitPage({
   }, "EKG tracing ", /*#__PURE__*/React.createElement("em", {
     className: "submit__optional"
   }, "PNG, JPG, or PDF \xB7 8MB max")), /*#__PURE__*/React.createElement("div", {
+    className: "submit__warning"
+  }, "No PHI, no patient identifiers."), /*#__PURE__*/React.createElement("div", {
     className: "submit__drop"
   }, form.imageData || form.pdfData ? /*#__PURE__*/React.createElement("div", {
     className: "submit__preview"

@@ -109,8 +109,12 @@ function App() {
       {route === 'draft' && <DraftPage state={state} setState={setState} params={params} />}
 
       <footer className="footer">
-        <div>TRACE OF EKG · WEEKLY · FIVE MINUTES</div>
-        <div>© 2026 · HACNIK </div>
+        <div className="footer__brand">TRACE OF EKG · WEEKLY · FIVE MINUTES</div>
+        <div className="footer__disclaimer">
+          <span>For teaching purposes only; not medical advice.</span>
+          <span>All Trace of EKG content is my intellectual property and may not be reused, reproduced, or distributed without my explicit consent.</span>
+        </div>
+        <div>© 2026 · HACNIK</div>
         <button className="footer__admin" onClick={() => go('admin')}>admin</button>
       </footer>
 

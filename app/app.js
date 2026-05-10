@@ -148,7 +148,11 @@ function App() {
     params: params
   }), /*#__PURE__*/React.createElement("footer", {
     className: "footer"
-  }, /*#__PURE__*/React.createElement("div", null, "TRACE OF EKG \xB7 WEEKLY \xB7 FIVE MINUTES"), /*#__PURE__*/React.createElement("div", null, "\xA9 2026 \xB7 HACNIK "), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "footer__brand"
+  }, "TRACE OF EKG \xB7 WEEKLY \xB7 FIVE MINUTES"), /*#__PURE__*/React.createElement("div", {
+    className: "footer__disclaimer"
+  }, /*#__PURE__*/React.createElement("span", null, "For teaching purposes only; not medical advice."), /*#__PURE__*/React.createElement("span", null, "All Trace of EKG content is my intellectual property and may not be reused, reproduced, or distributed without my explicit consent.")), /*#__PURE__*/React.createElement("div", null, "\xA9 2026 \xB7 HACNIK"), /*#__PURE__*/React.createElement("button", {
     className: "footer__admin",
     onClick: () => go('admin')
   }, "admin")), tweaksOpen && /*#__PURE__*/React.createElement(TweaksPanel, {

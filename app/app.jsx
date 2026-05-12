@@ -114,6 +114,7 @@ function App() {
           <span>Educational and informational content only; not medical advice, diagnosis, or treatment.</span>
           <span>Use of this site does not create a clinician-patient relationship and should not replace or delay care from a qualified health professional; for emergencies, call 911 or seek immediate care.</span>
           <span>All Trace of EKG content is my intellectual property and may not be reused, reproduced, distributed, or used to train AI systems without my explicit written consent.</span>
+          <span>EKG images and examples are included for teaching and commentary under fair-use principles; if you are the original rights holder and would like content removed, please reach out.</span>
         </div>
         <div>© 2026 · HACNIK</div>
         <button className="footer__admin" onClick={() => go('admin')}>admin</button>

@@ -486,12 +486,16 @@ function SchedulePanel({ state, setState }) {
 
 function ArchiveAdminPanel({ state, setState }) {
   const [editing, setEditing] = React.useState(null);
+  const lessons = [state.liveLesson, ...state.lessons].filter(Boolean);
   const remove = (id) => {
     if (!confirm('Delete this lesson?')) return;
     setState((s) => ({ ...s, lessons: s.lessons.filter((l) => l.id !== id) }));
   };
   const save = () => {
-    setState((s) => ({ ...s, lessons: s.lessons.map((l) => l.id === editing.id ? editing : l) }));
+    const { archiveSource, ...lesson } = editing;
+    setState((s) => archiveSource === 'live'
+      ? { ...s, liveLesson: lesson }
+      : { ...s, lessons: s.lessons.map((l) => l.id === lesson.id ? lesson : l) });
     setEditing(null);
   };
   if (editing) {
@@ -516,18 +520,22 @@ function ArchiveAdminPanel({ state, setState }) {
   }
   return (
     <ul className="admin__archivelist">
-      {state.lessons.map((l) => {
+      {lessons.map((l) => {
+        const isCurrent = state.liveLesson?.id === l.id;
         const topic = state.topics.find((t) => t.id === l.topic);
         return (
           <li key={l.id}>
             <span style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600 }}>{l.title}</div>
+              <div style={{ fontWeight: 600 }}>
+                {l.title}
+                {isCurrent && <span className="admin__pill">Current lesson</span>}
+              </div>
               <div style={{ fontSize: 13, opacity: 0.6 }}>
                 <span style={{ color: topic?.color }}>{topic?.name}</span> · {formatDate(l.date)} · {l.responses?.length || 0} reads
               </div>
             </span>
-            <button className="btn btn--ghost btn--sm" onClick={() => setEditing(l)}>Edit</button>
-            <button className="admin__streamdel" onClick={() => remove(l.id)}>×</button>
+            <button className="btn btn--ghost btn--sm" onClick={() => setEditing({ ...l, archiveSource: isCurrent ? 'live' : 'archive' })}>Edit</button>
+            {!isCurrent && <button className="admin__streamdel" onClick={() => remove(l.id)}>×</button>}
           </li>
         );
       })}

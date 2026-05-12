@@ -769,6 +769,7 @@ function ArchiveAdminPanel({
   setState
 }) {
   const [editing, setEditing] = React.useState(null);
+  const lessons = [state.liveLesson, ...state.lessons].filter(Boolean);
   const remove = id => {
     if (!confirm('Delete this lesson?')) return;
     setState(s => ({
@@ -777,10 +778,17 @@ function ArchiveAdminPanel({
     }));
   };
   const save = () => {
-    setState(s => ({
+    const {
+      archiveSource,
+      ...lesson
+    } = editing;
+    setState(s => archiveSource === 'live' ? {
       ...s,
-      lessons: s.lessons.map(l => l.id === editing.id ? editing : l)
-    }));
+      liveLesson: lesson
+    } : {
+      ...s,
+      lessons: s.lessons.map(l => l.id === lesson.id ? lesson : l)
+    });
     setEditing(null);
   };
   if (editing) {
@@ -835,7 +843,8 @@ function ArchiveAdminPanel({
   }
   return /*#__PURE__*/React.createElement("ul", {
     className: "admin__archivelist"
-  }, state.lessons.map(l => {
+  }, lessons.map(l => {
+    const isCurrent = state.liveLesson?.id === l.id;
     const topic = state.topics.find(t => t.id === l.topic);
     return /*#__PURE__*/React.createElement("li", {
       key: l.id
@@ -847,7 +856,9 @@ function ArchiveAdminPanel({
       style: {
         fontWeight: 600
       }
-    }, l.title), /*#__PURE__*/React.createElement("div", {
+    }, l.title, isCurrent && /*#__PURE__*/React.createElement("span", {
+      className: "admin__pill"
+    }, "Current lesson")), /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: 13,
         opacity: 0.6
@@ -858,8 +869,11 @@ function ArchiveAdminPanel({
       }
     }, topic?.name), " \xB7 ", formatDate(l.date), " \xB7 ", l.responses?.length || 0, " reads")), /*#__PURE__*/React.createElement("button", {
       className: "btn btn--ghost btn--sm",
-      onClick: () => setEditing(l)
-    }, "Edit"), /*#__PURE__*/React.createElement("button", {
+      onClick: () => setEditing({
+        ...l,
+        archiveSource: isCurrent ? 'live' : 'archive'
+      })
+    }, "Edit"), !isCurrent && /*#__PURE__*/React.createElement("button", {
       className: "admin__streamdel",
       onClick: () => remove(l.id)
     }, "\xD7"));

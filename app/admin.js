@@ -419,6 +419,37 @@ function ThisWeekPanel({
       revealed: true
     }
   }));
+  const addToArchive = () => {
+    if (!live.revealed) return;
+    if (!confirm('Add this revealed session to the archive and clear This Week?')) return;
+    setState(s => {
+      const current = {
+        ...s.liveLesson,
+        ...draft,
+        responses: s.liveLesson.responses || []
+      };
+      const baseId = current.id && current.id !== 'current' ? current.id : `w${s.currentWeek || Date.now()}`;
+      const usedIds = new Set((s.lessons || []).map(l => l.id));
+      const archiveId = usedIds.has(baseId) ? `${baseId}-${Date.now().toString(36)}` : baseId;
+      const archived = {
+        ...current,
+        id: archiveId,
+        liveStartedAt: null,
+        revealed: true,
+        archivedAt: new Date().toISOString()
+      };
+      const nextWeek = (s.currentWeek || 0) + 1;
+      return {
+        ...s,
+        currentWeek: nextWeek,
+        lessons: [archived, ...(s.lessons || [])],
+        liveLesson: createEmptyLiveLesson({
+          ...s,
+          currentWeek: nextWeek
+        })
+      };
+    });
+  };
   return /*#__PURE__*/React.createElement("div", {
     className: "admin__grid"
   }, /*#__PURE__*/React.createElement("div", {
@@ -563,7 +594,10 @@ function ThisWeekPanel({
   }, "\u25B6 Go live ", duration ? `(${duration}s)` : '(open)'), isLive && /*#__PURE__*/React.createElement("button", {
     className: "btn btn--primary",
     onClick: reveal
-  }, "Reveal now"), (isLive || live.revealed) && /*#__PURE__*/React.createElement("button", {
+  }, "Reveal now"), live.revealed && /*#__PURE__*/React.createElement("button", {
+    className: "btn btn--primary",
+    onClick: addToArchive
+  }, "Add to archive"), (isLive || live.revealed) && /*#__PURE__*/React.createElement("button", {
     className: "btn btn--ghost",
     onClick: endSession
   }, "End session"), (isLive || live.revealed || live.responses?.length > 0) && /*#__PURE__*/React.createElement("button", {
@@ -769,7 +803,7 @@ function ArchiveAdminPanel({
   setState
 }) {
   const [editing, setEditing] = React.useState(null);
-  const lessons = [state.liveLesson, ...state.lessons].filter(Boolean);
+  const lessons = [state.liveLesson, ...state.lessons].filter(isLessonReadyForArchive);
   const remove = id => {
     if (!confirm('Delete this lesson?')) return;
     setState(s => ({

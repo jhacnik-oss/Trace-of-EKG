@@ -215,6 +215,39 @@ const DEFAULT_STATE = {
   guestDrafts: {}, // inviteId -> guest lecturer draft saved from invite link
 };
 
+function localTodayISO() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function createEmptyLiveLesson(state = {}) {
+  const topics = state.topics || TOPICS;
+  const week = state.currentWeek || DEFAULT_STATE.currentWeek;
+  return {
+    id: 'live-' + Date.now().toString(36),
+    week,
+    date: localTodayISO(),
+    title: '',
+    topic: topics[0]?.id || 'ischemia',
+    question: 'Interpret this EKG',
+    answer: '',
+    bullets: [],
+    imageData: null,
+    pdfData: null,
+    imageUrl: '',
+    pdfUrl: '',
+    responses: [],
+    revealed: false,
+    liveStartedAt: null,
+    duration: 60
+  };
+}
+function isLessonReadyForArchive(lesson) {
+  return Boolean(lesson && String(lesson.title || '').trim());
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -555,5 +588,6 @@ function useAppState() {
 
 Object.assign(window, {
   STORAGE_KEY, FIREBASE_ENABLED, DEMO_MODE, ADMIN_PASSWORD, TOPICS, SEED_LESSONS, DEFAULT_STATE,
+  localTodayISO, createEmptyLiveLesson, isLessonReadyForArchive,
   loadState, saveState, normalizeState, useAppState,
 });

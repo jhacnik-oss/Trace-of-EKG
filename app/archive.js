@@ -4,7 +4,7 @@ function Archive({
   state,
   layout = 'by-topic'
 }) {
-  const allLessons = [state.liveLesson, ...state.lessons].filter(Boolean);
+  const allLessons = [state.liveLesson, ...state.lessons].filter(isLessonReadyForArchive);
   const [openId, setOpenId] = React.useState(null);
   const [filter, setFilter] = React.useState('all');
   const filtered = filter === 'all' ? allLessons : allLessons.filter(l => l.topic === filter);

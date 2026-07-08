@@ -328,17 +328,25 @@ function ThisWeekPanel({
     openEnded
   } = useCountdown(live.liveStartedAt, live.duration ?? LIVE_DURATION_S);
   const isLive = live.liveStartedAt && (openEnded || remaining > 0) && !live.revealed;
-  const patch = p => setDraft(d => ({
-    ...d,
-    ...p
-  }));
-  const save = () => setState(s => ({
-    ...s,
-    liveLesson: {
-      ...s.liveLesson,
-      ...draft
-    }
-  }));
+  const [saved, setSaved] = React.useState(false);
+  const patch = p => {
+    setDraft(d => ({
+      ...d,
+      ...p
+    }));
+    setSaved(false);
+  };
+  const save = () => {
+    setState(s => ({
+      ...s,
+      liveLesson: {
+        ...s.liveLesson,
+        ...draft
+      }
+    }));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
   const saveAsDraft = () => {
     const id = draft.draftId || 'draft-' + Date.now().toString(36);
     const entry = {
@@ -527,16 +535,40 @@ function ThisWeekPanel({
     onChange: async e => {
       const f = e.target.files?.[0];
       if (!f) return;
-      const data = await fileToDataURL(f);
-      if (f.type === 'application/pdf') patch({
-        pdfData: data,
+      patch({
         imageData: null,
-        imageUrl: ''
-      });else patch({
-        imageData: data,
         pdfData: null,
         imageUrl: ''
-      });
+      }); // clear while uploading
+      try {
+        const fb = window.traceFirebase;
+        if (fb?.enabled && fb?.uploadDataUrl) {
+          // Upload to Firebase Storage — avoids Firestore 1MB doc limit
+          const data = await fileToDataURL(f);
+          const {
+            url
+          } = await fb.uploadDataUrl(data, f.name, 'lesson-media');
+          patch({
+            imageUrl: url,
+            imageData: null,
+            pdfData: null
+          });
+        } else {
+          // Demo mode — store as base64
+          const data = await fileToDataURL(f);
+          if (f.type === 'application/pdf') patch({
+            pdfData: data,
+            imageData: null,
+            imageUrl: ''
+          });else patch({
+            imageData: data,
+            pdfData: null,
+            imageUrl: ''
+          });
+        }
+      } catch (err) {
+        alert('Upload failed: ' + (err.message || err));
+      }
     }
   }), (draft.imageData || draft.pdfData || draft.imageUrl) && /*#__PURE__*/React.createElement("button", {
     type: "button",
@@ -548,7 +580,7 @@ function ThisWeekPanel({
     })
   }, "Clear"), /*#__PURE__*/React.createElement("span", {
     className: "admin__uploadhint"
-  }, draft.pdfData ? 'PDF attached' : draft.imageData ? 'Image attached' : draft.imageUrl ? draft.imageUrl : 'Falls back to placeholder trace if blank'))), /*#__PURE__*/React.createElement("label", {
+  }, draft.pdfData ? 'PDF attached' : draft.imageData ? 'Image attached' : draft.imageUrl ? 'Uploaded ✓' : 'Falls back to placeholder trace if blank'))), /*#__PURE__*/React.createElement("label", {
     className: "admin__field"
   }, /*#__PURE__*/React.createElement("span", null, "\u2026or external image URL"), /*#__PURE__*/React.createElement("input", {
     value: draft.imageUrl || '',
@@ -579,7 +611,7 @@ function ThisWeekPanel({
   }, /*#__PURE__*/React.createElement("button", {
     className: "btn btn--ghost",
     onClick: save
-  }, "Save this week"), /*#__PURE__*/React.createElement("button", {
+  }, saved ? '✓ Saved' : 'Save this week'), /*#__PURE__*/React.createElement("button", {
     className: "btn btn--ghost",
     onClick: saveAsDraft
   }, "Save as draft"), /*#__PURE__*/React.createElement("button", {

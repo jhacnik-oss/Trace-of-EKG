@@ -251,8 +251,9 @@ function ThisWeekPanel({ state, setState, onOpenDrafts }) {
   const { remaining, openEnded } = useCountdown(live.liveStartedAt, live.duration ?? LIVE_DURATION_S);
   const isLive = live.liveStartedAt && (openEnded || remaining > 0) && !live.revealed;
 
-  const patch = (p) => setDraft((d) => ({ ...d, ...p }));
-  const save = () => setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, ...draft } }));
+  const [saved, setSaved] = React.useState(false);
+  const patch = (p) => { setDraft((d) => ({ ...d, ...p })); setSaved(false); };
+  const save = () => { setState((s) => ({ ...s, liveLesson: { ...s.liveLesson, ...draft } })); setSaved(true); setTimeout(() => setSaved(false), 2000); };
   const saveAsDraft = () => {
     const id = draft.draftId || 'draft-' + Date.now().toString(36);
     const entry = {
@@ -392,7 +393,7 @@ function ThisWeekPanel({ state, setState, onOpenDrafts }) {
           <textarea rows={6} value={draft.bullets.join('\n')} onChange={(e) => patch({ bullets: e.target.value.split('\n') })} />
         </label>
         <div className="admin__actions">
-          <button className="btn btn--ghost" onClick={save}>Save this week</button>
+          <button className="btn btn--ghost" onClick={save}>{saved ? '✓ Saved' : 'Save this week'}</button>
           <button className="btn btn--ghost" onClick={saveAsDraft}>Save as draft</button>
           <button className="btn btn--ghost" onClick={duplicateAsDraft}>Duplicate current lesson as draft</button>
           <button className="btn btn--ghost" onClick={onOpenDrafts}>Saved drafts ({(state.drafts || []).length})</button>

@@ -263,7 +263,17 @@ function loadState() {
 }
 
 function saveState(s) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch (e) {}
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+    return true;
+  } catch (e) {
+    // QuotaExceededError — most likely from large base64 images. Warn once.
+    if (!saveState._warned) {
+      saveState._warned = true;
+      alert('Storage full — your changes could not be saved. Try removing the EKG image or clearing old data, then save again.');
+    }
+    return false;
+  }
 }
 
 function normalizeState(value) {

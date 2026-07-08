@@ -23,7 +23,11 @@ function saveLocalGuestDraft(id, data) {
 }
 
 function loadGuestDraft(id, state) {
-  return (state.guestDrafts || {})[id] || loadLocalGuestDraft(id);
+  const remote = (state.guestDrafts || {})[id];
+  const local = loadLocalGuestDraft(id);
+  if (!remote) return local;
+  // Firestore doesn't store imageData/pdfData — always pull them from localStorage
+  return { ...remote, imageData: local?.imageData ?? null, pdfData: local?.pdfData ?? null };
 }
 
 function saveGuestDraft(id, data, setState) {

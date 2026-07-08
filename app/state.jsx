@@ -371,7 +371,9 @@ async function syncGuestDrafts(nextDrafts = {}, prevDrafts = {}) {
   const batch = db.batch();
   const ref = db.collection('guestDrafts');
   Object.entries(nextDrafts || {}).forEach(([id, draft]) => {
-    batch.set(ref.doc(id), cleanForFirestore({ ...draft, id }), { merge: false });
+    // Strip binary data — images stay in localStorage only to avoid Firestore 1MB limit
+    const { imageData: _img, pdfData: _pdf, ...textFields } = draft;
+    batch.set(ref.doc(id), cleanForFirestore({ ...textFields, id }), { merge: false });
   });
   Object.keys(prevDrafts || {}).forEach((id) => {
     if (!(id in (nextDrafts || {}))) batch.delete(ref.doc(id));

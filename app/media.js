@@ -66,12 +66,35 @@ function LessonMedia({
   });
 }
 
-// File -> data URL helper
+// File -> data URL helper. Images are compressed to ≤800px / 70% JPEG to
+// stay well under Firestore's 1MB document limit. PDFs pass through as-is.
 function fileToDataURL(file) {
   return new Promise((resolve, reject) => {
+    if (file.type === 'application/pdf') {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+      return;
+    }
     const r = new FileReader();
-    r.onload = () => resolve(r.result);
     r.onerror = reject;
+    r.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const MAX = 900;
+        const scale = img.width > MAX ? MAX / img.width : 1;
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.72));
+      };
+      img.src = r.result;
+    };
     r.readAsDataURL(file);
   });
 }

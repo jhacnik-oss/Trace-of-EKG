@@ -535,40 +535,16 @@ function ThisWeekPanel({
     onChange: async e => {
       const f = e.target.files?.[0];
       if (!f) return;
-      patch({
+      const data = await fileToDataURL(f);
+      if (f.type === 'application/pdf') patch({
+        pdfData: data,
         imageData: null,
+        imageUrl: ''
+      });else patch({
+        imageData: data,
         pdfData: null,
         imageUrl: ''
-      }); // clear while uploading
-      try {
-        const fb = window.traceFirebase;
-        if (fb?.enabled && fb?.uploadDataUrl) {
-          // Upload to Firebase Storage — avoids Firestore 1MB doc limit
-          const data = await fileToDataURL(f);
-          const {
-            url
-          } = await fb.uploadDataUrl(data, f.name, 'lesson-media');
-          patch({
-            imageUrl: url,
-            imageData: null,
-            pdfData: null
-          });
-        } else {
-          // Demo mode — store as base64
-          const data = await fileToDataURL(f);
-          if (f.type === 'application/pdf') patch({
-            pdfData: data,
-            imageData: null,
-            imageUrl: ''
-          });else patch({
-            imageData: data,
-            pdfData: null,
-            imageUrl: ''
-          });
-        }
-      } catch (err) {
-        alert('Upload failed: ' + (err.message || err));
-      }
+      });
     }
   }), (draft.imageData || draft.pdfData || draft.imageUrl) && /*#__PURE__*/React.createElement("button", {
     type: "button",
@@ -580,7 +556,7 @@ function ThisWeekPanel({
     })
   }, "Clear"), /*#__PURE__*/React.createElement("span", {
     className: "admin__uploadhint"
-  }, draft.pdfData ? 'PDF attached' : draft.imageData ? 'Image attached' : draft.imageUrl ? 'Uploaded ✓' : 'Falls back to placeholder trace if blank'))), /*#__PURE__*/React.createElement("label", {
+  }, draft.pdfData ? 'PDF attached' : draft.imageData ? 'Image attached' : draft.imageUrl ? draft.imageUrl : 'Falls back to placeholder trace if blank'))), /*#__PURE__*/React.createElement("label", {
     className: "admin__field"
   }, /*#__PURE__*/React.createElement("span", null, "\u2026or external image URL"), /*#__PURE__*/React.createElement("input", {
     value: draft.imageUrl || '',

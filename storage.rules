@@ -13,6 +13,12 @@ service firebase.storage {
         && request.resource.size < 8 * 1024 * 1024;
     }
 
+    // Lesson EKG images — admin uploads, publicly readable by residents during live
+    match /lesson-media/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() && request.resource.size < 16 * 1024 * 1024;
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

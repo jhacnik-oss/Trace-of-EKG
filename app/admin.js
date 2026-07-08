@@ -1279,7 +1279,21 @@ function DraftEditForm({
       pdfUrl: ''
     }),
     placeholder: "https://\u2026"
-  })), /*#__PURE__*/React.createElement("label", {
+  })), (d.imageData || d.imageUrl || d.pdfData || d.pdfUrl) && /*#__PURE__*/React.createElement("div", {
+    className: "admin__preview",
+    style: {
+      marginBottom: 20
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "hero__label"
+  }, "Draft preview"), /*#__PURE__*/React.createElement("div", {
+    className: "admin__previewframe"
+  }, /*#__PURE__*/React.createElement(LessonMedia, {
+    lesson: d,
+    height: 220,
+    grid: true,
+    color: "var(--accent)"
+  }))), /*#__PURE__*/React.createElement("label", {
     className: "admin__field"
   }, /*#__PURE__*/React.createElement("span", null, "The read (answer)"), /*#__PURE__*/React.createElement("textarea", {
     rows: 3,

@@ -756,6 +756,14 @@ function DraftEditForm({ draft: initialDraft, state, onSave, onCancel }) {
       <label className="admin__field"><span>…or image URL</span>
         <input value={d.imageUrl || ''} disabled={uploading}
           onChange={(e) => patch({ imageUrl: e.target.value, imageData: null, pdfData: null, pdfUrl: '' })} placeholder="https://…" /></label>
+      {(d.imageData || d.imageUrl || d.pdfData || d.pdfUrl) && (
+        <div className="admin__preview" style={{ marginBottom: 20 }}>
+          <div className="hero__label">Draft preview</div>
+          <div className="admin__previewframe">
+            <LessonMedia lesson={d} height={220} grid={true} color="var(--accent)" />
+          </div>
+        </div>
+      )}
       <label className="admin__field"><span>The read (answer)</span>
         <textarea rows={3} value={d.answer} onChange={(e) => patch({ answer: e.target.value })} /></label>
       <label className="admin__field"><span>Teaching points (one per line)</span>

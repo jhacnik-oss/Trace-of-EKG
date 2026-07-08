@@ -691,7 +691,35 @@ function ApprovalsPanel({ state, setState }) {
 
 function DraftEditForm({ draft: initialDraft, state, onSave, onCancel }) {
   const [d, setD] = React.useState(initialDraft);
+  const [uploading, setUploading] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState('');
   const patch = (p) => setD((x) => ({ ...x, ...p }));
+  const attachMedia = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const data = await fileToDataURL(file);
+      const firebase = window.traceFirebase;
+      if (firebase?.enabled && firebase?.uploadDataUrl) {
+        const upload = await firebase.uploadDataUrl(data, file.name, 'lesson-media');
+        if (file.type === 'application/pdf') {
+          patch({ pdfUrl: upload.url, pdfData: null, imageData: null, imageUrl: '' });
+        } else {
+          patch({ imageUrl: upload.url, imageData: null, pdfData: null, pdfUrl: '' });
+        }
+      } else if (file.type === 'application/pdf') {
+        patch({ pdfData: data, pdfUrl: '', imageData: null, imageUrl: '' });
+      } else {
+        patch({ imageData: data, imageUrl: '', pdfData: null, pdfUrl: '' });
+      }
+    } catch (error) {
+      console.error('Admin draft media upload failed:', error);
+      setUploadError('Upload failed. Please try that file again.');
+    } finally {
+      setUploading(false);
+    }
+  };
   return (
     <div className="admin__col">
       <div className="hero__label" style={{ marginBottom: 12 }}>
@@ -713,30 +741,30 @@ function DraftEditForm({ draft: initialDraft, state, onSave, onCancel }) {
         <span>EKG image or PDF</span>
         <div className="admin__warning">No PHI, no patient identifiers.</div>
         <div className="admin__upload">
-          <input type="file" accept="image/*,application/pdf" onChange={async (e) => {
-            const f = e.target.files?.[0]; if (!f) return;
-            const data = await fileToDataURL(f);
-            if (f.type === 'application/pdf') patch({ pdfData: data, imageData: null, imageUrl: '' });
-            else patch({ imageData: data, pdfData: null, imageUrl: '' });
-          }} />
-          {(d.imageData || d.pdfData || d.imageUrl) && (
+          <input type="file" accept="image/*,application/pdf" disabled={uploading}
+            onChange={(e) => attachMedia(e.target.files?.[0])} />
+          {(d.imageData || d.pdfData || d.imageUrl || d.pdfUrl) && (
             <button type="button" className="btn btn--ghost btn--sm"
-              onClick={() => patch({ imageData: null, pdfData: null, imageUrl: '' })}>Clear</button>
+              disabled={uploading}
+              onClick={() => patch({ imageData: null, pdfData: null, imageUrl: '', pdfUrl: '' })}>Clear</button>
           )}
           <span className="admin__uploadhint">
-            {d.pdfData ? 'PDF attached' : d.imageData ? 'Image attached' : d.imageUrl || 'No image'}
+            {uploading ? 'Uploading…' : uploadError || (d.pdfData || d.pdfUrl ? 'PDF attached ✓' : (d.imageData || d.imageUrl) ? 'Image attached ✓' : 'No image')}
           </span>
         </div>
       </label>
       <label className="admin__field"><span>…or image URL</span>
-        <input value={d.imageUrl || ''} onChange={(e) => patch({ imageUrl: e.target.value, imageData: null, pdfData: null })} placeholder="https://…" /></label>
+        <input value={d.imageUrl || ''} disabled={uploading}
+          onChange={(e) => patch({ imageUrl: e.target.value, imageData: null, pdfData: null, pdfUrl: '' })} placeholder="https://…" /></label>
       <label className="admin__field"><span>The read (answer)</span>
         <textarea rows={3} value={d.answer} onChange={(e) => patch({ answer: e.target.value })} /></label>
       <label className="admin__field"><span>Teaching points (one per line)</span>
         <textarea rows={5} value={(d.bullets || []).join('\n')} onChange={(e) => patch({ bullets: e.target.value.split('\n') })} /></label>
       <div className="admin__actions">
-        <button className="btn btn--ghost" onClick={onCancel}>Cancel</button>
-        <button className="btn btn--primary" onClick={() => onSave(d)}>Save draft</button>
+        <button className="btn btn--ghost" onClick={onCancel} disabled={uploading}>Cancel</button>
+        <button className="btn btn--primary" onClick={() => onSave(d)} disabled={uploading}>
+          {uploading ? 'Uploading…' : 'Save draft'}
+        </button>
       </div>
     </div>
   );
@@ -758,6 +786,7 @@ function DraftsPanel({ state, setState }) {
     imageData: null,
     pdfData: null,
     imageUrl: '',
+    pdfUrl: '',
     duration: 30,
     savedAt: null,
   });
@@ -797,6 +826,7 @@ function DraftsPanel({ state, setState }) {
         imageData: d.imageData,
         pdfData: d.pdfData,
         imageUrl: d.imageUrl || '',
+        pdfUrl: d.pdfUrl || '',
         duration: d.duration,
         responses: [],
         revealed: false,

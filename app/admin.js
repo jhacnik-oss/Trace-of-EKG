@@ -1150,10 +1150,58 @@ function DraftEditForm({
   onCancel
 }) {
   const [d, setD] = React.useState(initialDraft);
+  const [uploading, setUploading] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState('');
   const patch = p => setD(x => ({
     ...x,
     ...p
   }));
+  const attachMedia = async file => {
+    if (!file) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const data = await fileToDataURL(file);
+      const firebase = window.traceFirebase;
+      if (firebase?.enabled && firebase?.uploadDataUrl) {
+        const upload = await firebase.uploadDataUrl(data, file.name, 'lesson-media');
+        if (file.type === 'application/pdf') {
+          patch({
+            pdfUrl: upload.url,
+            pdfData: null,
+            imageData: null,
+            imageUrl: ''
+          });
+        } else {
+          patch({
+            imageUrl: upload.url,
+            imageData: null,
+            pdfData: null,
+            pdfUrl: ''
+          });
+        }
+      } else if (file.type === 'application/pdf') {
+        patch({
+          pdfData: data,
+          pdfUrl: '',
+          imageData: null,
+          imageUrl: ''
+        });
+      } else {
+        patch({
+          imageData: data,
+          imageUrl: '',
+          pdfData: null,
+          pdfUrl: ''
+        });
+      }
+    } catch (error) {
+      console.error('Admin draft media upload failed:', error);
+      setUploadError('Upload failed. Please try that file again.');
+    } finally {
+      setUploading(false);
+    }
+  };
   return /*#__PURE__*/React.createElement("div", {
     className: "admin__col"
   }, /*#__PURE__*/React.createElement("div", {
@@ -1205,38 +1253,30 @@ function DraftEditForm({
   }, /*#__PURE__*/React.createElement("input", {
     type: "file",
     accept: "image/*,application/pdf",
-    onChange: async e => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      const data = await fileToDataURL(f);
-      if (f.type === 'application/pdf') patch({
-        pdfData: data,
-        imageData: null,
-        imageUrl: ''
-      });else patch({
-        imageData: data,
-        pdfData: null,
-        imageUrl: ''
-      });
-    }
-  }), (d.imageData || d.pdfData || d.imageUrl) && /*#__PURE__*/React.createElement("button", {
+    disabled: uploading,
+    onChange: e => attachMedia(e.target.files?.[0])
+  }), (d.imageData || d.pdfData || d.imageUrl || d.pdfUrl) && /*#__PURE__*/React.createElement("button", {
     type: "button",
     className: "btn btn--ghost btn--sm",
+    disabled: uploading,
     onClick: () => patch({
       imageData: null,
       pdfData: null,
-      imageUrl: ''
+      imageUrl: '',
+      pdfUrl: ''
     })
   }, "Clear"), /*#__PURE__*/React.createElement("span", {
     className: "admin__uploadhint"
-  }, d.pdfData ? 'PDF attached' : d.imageData ? 'Image attached' : d.imageUrl || 'No image'))), /*#__PURE__*/React.createElement("label", {
+  }, uploading ? 'Uploading…' : uploadError || (d.pdfData || d.pdfUrl ? 'PDF attached ✓' : d.imageData || d.imageUrl ? 'Image attached ✓' : 'No image')))), /*#__PURE__*/React.createElement("label", {
     className: "admin__field"
   }, /*#__PURE__*/React.createElement("span", null, "\u2026or image URL"), /*#__PURE__*/React.createElement("input", {
     value: d.imageUrl || '',
+    disabled: uploading,
     onChange: e => patch({
       imageUrl: e.target.value,
       imageData: null,
-      pdfData: null
+      pdfData: null,
+      pdfUrl: ''
     }),
     placeholder: "https://\u2026"
   })), /*#__PURE__*/React.createElement("label", {
@@ -1259,11 +1299,13 @@ function DraftEditForm({
     className: "admin__actions"
   }, /*#__PURE__*/React.createElement("button", {
     className: "btn btn--ghost",
-    onClick: onCancel
+    onClick: onCancel,
+    disabled: uploading
   }, "Cancel"), /*#__PURE__*/React.createElement("button", {
     className: "btn btn--primary",
-    onClick: () => onSave(d)
-  }, "Save draft")));
+    onClick: () => onSave(d),
+    disabled: uploading
+  }, uploading ? 'Uploading…' : 'Save draft')));
 }
 function DraftsPanel({
   state,
@@ -1283,6 +1325,7 @@ function DraftsPanel({
     imageData: null,
     pdfData: null,
     imageUrl: '',
+    pdfUrl: '',
     duration: 30,
     savedAt: null
   });
@@ -1323,6 +1366,7 @@ function DraftsPanel({
         imageData: d.imageData,
         pdfData: d.pdfData,
         imageUrl: d.imageUrl || '',
+        pdfUrl: d.pdfUrl || '',
         duration: d.duration,
         responses: [],
         revealed: false,

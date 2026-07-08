@@ -76,6 +76,8 @@ function DraftPage({ state, setState, params }) {
 
   const [view, setView] = React.useState('edit'); // 'edit' | 'submitted'
   const [saved, setSaved] = React.useState(false);
+  const [uploading, setUploading] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState('');
 
   const [draft, setDraft] = React.useState(() => {
     const existing = loadGuestDraft(inviteId, state);
@@ -92,12 +94,40 @@ function DraftPage({ state, setState, params }) {
       imageData: null,
       pdfData: null,
       imageUrl: '',
+      pdfUrl: '',
       duration: 30,
       savedAt: null,
     };
   });
 
   const patch = (p) => { setDraft((d) => ({ ...d, ...p })); setSaved(false); };
+
+  const attachMedia = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const data = await fileToDataURL(file);
+      const firebase = window.traceFirebase;
+      if (firebase?.enabled && firebase?.uploadDataUrl) {
+        const upload = await firebase.uploadDataUrl(data, file.name, `guest-draft-media/${inviteId}`);
+        if (file.type === 'application/pdf') {
+          patch({ pdfUrl: upload.url, pdfData: null, imageData: null, imageUrl: '' });
+        } else {
+          patch({ imageUrl: upload.url, imageData: null, pdfData: null, pdfUrl: '' });
+        }
+      } else if (file.type === 'application/pdf') {
+        patch({ pdfData: data, pdfUrl: '', imageData: null, imageUrl: '' });
+      } else {
+        patch({ imageData: data, imageUrl: '', pdfData: null, pdfUrl: '' });
+      }
+    } catch (error) {
+      console.error('Draft media upload failed:', error);
+      setUploadError('Upload failed. Please try that file again.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Debounced autosave — 3s after last change.
   React.useEffect(() => {
@@ -231,24 +261,22 @@ function DraftPage({ state, setState, params }) {
             <span>EKG image or PDF</span>
             <div className="admin__warning">No PHI, no patient identifiers.</div>
             <div className="admin__upload">
-              <input type="file" accept="image/*,application/pdf" onChange={async (e) => {
-                const f = e.target.files?.[0]; if (!f) return;
-                const data = await fileToDataURL(f);
-                if (f.type === 'application/pdf') patch({ pdfData: data, imageData: null, imageUrl: '' });
-                else patch({ imageData: data, pdfData: null, imageUrl: '' });
-              }} />
-              {(draft.imageData || draft.pdfData || draft.imageUrl) && (
+              <input type="file" accept="image/*,application/pdf" disabled={uploading}
+                onChange={(e) => attachMedia(e.target.files?.[0])} />
+              {(draft.imageData || draft.pdfData || draft.imageUrl || draft.pdfUrl) && (
                 <button type="button" className="btn btn--ghost btn--sm"
-                  onClick={() => patch({ imageData: null, pdfData: null, imageUrl: '' })}>Clear</button>
+                  disabled={uploading}
+                  onClick={() => patch({ imageData: null, pdfData: null, imageUrl: '', pdfUrl: '' })}>Clear</button>
               )}
               <span className="admin__uploadhint">
-                {draft.pdfData ? 'PDF attached' : draft.imageData ? 'Image attached' : draft.imageUrl || 'No image yet — falls back to placeholder'}
+                {uploading ? 'Uploading…' : uploadError || (draft.pdfData || draft.pdfUrl ? 'PDF attached ✓' : (draft.imageData || draft.imageUrl) ? 'Image attached ✓' : 'No image yet — falls back to placeholder')}
               </span>
             </div>
           </label>
           <label className="admin__field">
             <span>…or image URL</span>
-            <input value={draft.imageUrl || ''} onChange={(e) => patch({ imageUrl: e.target.value, imageData: null, pdfData: null })} placeholder="https://…" />
+            <input value={draft.imageUrl || ''} disabled={uploading}
+              onChange={(e) => patch({ imageUrl: e.target.value, imageData: null, pdfData: null, pdfUrl: '' })} placeholder="https://…" />
           </label>
           <label className="admin__field">
             <span>The read (answer)</span>
@@ -260,11 +288,11 @@ function DraftPage({ state, setState, params }) {
           </label>
 
           <div className="admin__actions">
-            <button className="btn btn--ghost" onClick={save}>
-              {saved ? '✓ Saved' : 'Save progress'}
+            <button className="btn btn--ghost" onClick={save} disabled={uploading}>
+              {uploading ? 'Uploading…' : saved ? '✓ Saved' : 'Save progress'}
             </button>
             {!isLive && !live.revealed && (
-              <button className="btn btn--primary" onClick={goLive}>
+              <button className="btn btn--primary" onClick={goLive} disabled={uploading}>
                 ▶ Go live {duration ? `(${duration}s)` : '(open)'}
               </button>
             )}

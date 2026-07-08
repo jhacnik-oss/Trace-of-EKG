@@ -19,6 +19,15 @@ service firebase.storage {
       allow write: if isAdmin() && request.resource.size < 16 * 1024 * 1024;
     }
 
+    // Invite links use anonymous Firebase auth. Media is stored separately so
+    // guest draft documents stay below Firestore's 1MB document limit.
+    match /guest-draft-media/{inviteId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && request.resource.size < 8 * 1024 * 1024
+        && request.resource.contentType.matches('(image/.*|application/pdf)');
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

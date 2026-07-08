@@ -113,6 +113,8 @@ function DraftPage({
   const isLive = live.liveStartedAt && (openEnded || remaining > 0) && !live.revealed;
   const [view, setView] = React.useState('edit'); // 'edit' | 'submitted'
   const [saved, setSaved] = React.useState(false);
+  const [uploading, setUploading] = React.useState(false);
+  const [uploadError, setUploadError] = React.useState('');
   const [draft, setDraft] = React.useState(() => {
     const existing = loadGuestDraft(inviteId, state);
     if (existing) return existing;
@@ -128,6 +130,7 @@ function DraftPage({
       imageData: null,
       pdfData: null,
       imageUrl: '',
+      pdfUrl: '',
       duration: 30,
       savedAt: null
     };
@@ -138,6 +141,52 @@ function DraftPage({
       ...p
     }));
     setSaved(false);
+  };
+  const attachMedia = async file => {
+    if (!file) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const data = await fileToDataURL(file);
+      const firebase = window.traceFirebase;
+      if (firebase?.enabled && firebase?.uploadDataUrl) {
+        const upload = await firebase.uploadDataUrl(data, file.name, `guest-draft-media/${inviteId}`);
+        if (file.type === 'application/pdf') {
+          patch({
+            pdfUrl: upload.url,
+            pdfData: null,
+            imageData: null,
+            imageUrl: ''
+          });
+        } else {
+          patch({
+            imageUrl: upload.url,
+            imageData: null,
+            pdfData: null,
+            pdfUrl: ''
+          });
+        }
+      } else if (file.type === 'application/pdf') {
+        patch({
+          pdfData: data,
+          pdfUrl: '',
+          imageData: null,
+          imageUrl: ''
+        });
+      } else {
+        patch({
+          imageData: data,
+          imageUrl: '',
+          pdfData: null,
+          pdfUrl: ''
+        });
+      }
+    } catch (error) {
+      console.error('Draft media upload failed:', error);
+      setUploadError('Upload failed. Please try that file again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   // Debounced autosave — 3s after last change.
@@ -347,38 +396,30 @@ function DraftPage({
   }, /*#__PURE__*/React.createElement("input", {
     type: "file",
     accept: "image/*,application/pdf",
-    onChange: async e => {
-      const f = e.target.files?.[0];
-      if (!f) return;
-      const data = await fileToDataURL(f);
-      if (f.type === 'application/pdf') patch({
-        pdfData: data,
-        imageData: null,
-        imageUrl: ''
-      });else patch({
-        imageData: data,
-        pdfData: null,
-        imageUrl: ''
-      });
-    }
-  }), (draft.imageData || draft.pdfData || draft.imageUrl) && /*#__PURE__*/React.createElement("button", {
+    disabled: uploading,
+    onChange: e => attachMedia(e.target.files?.[0])
+  }), (draft.imageData || draft.pdfData || draft.imageUrl || draft.pdfUrl) && /*#__PURE__*/React.createElement("button", {
     type: "button",
     className: "btn btn--ghost btn--sm",
+    disabled: uploading,
     onClick: () => patch({
       imageData: null,
       pdfData: null,
-      imageUrl: ''
+      imageUrl: '',
+      pdfUrl: ''
     })
   }, "Clear"), /*#__PURE__*/React.createElement("span", {
     className: "admin__uploadhint"
-  }, draft.pdfData ? 'PDF attached' : draft.imageData ? 'Image attached' : draft.imageUrl || 'No image yet — falls back to placeholder'))), /*#__PURE__*/React.createElement("label", {
+  }, uploading ? 'Uploading…' : uploadError || (draft.pdfData || draft.pdfUrl ? 'PDF attached ✓' : draft.imageData || draft.imageUrl ? 'Image attached ✓' : 'No image yet — falls back to placeholder')))), /*#__PURE__*/React.createElement("label", {
     className: "admin__field"
   }, /*#__PURE__*/React.createElement("span", null, "\u2026or image URL"), /*#__PURE__*/React.createElement("input", {
     value: draft.imageUrl || '',
+    disabled: uploading,
     onChange: e => patch({
       imageUrl: e.target.value,
       imageData: null,
-      pdfData: null
+      pdfData: null,
+      pdfUrl: ''
     }),
     placeholder: "https://\u2026"
   })), /*#__PURE__*/React.createElement("label", {
@@ -401,10 +442,12 @@ function DraftPage({
     className: "admin__actions"
   }, /*#__PURE__*/React.createElement("button", {
     className: "btn btn--ghost",
-    onClick: save
-  }, saved ? '✓ Saved' : 'Save progress'), !isLive && !live.revealed && /*#__PURE__*/React.createElement("button", {
+    onClick: save,
+    disabled: uploading
+  }, uploading ? 'Uploading…' : saved ? '✓ Saved' : 'Save progress'), !isLive && !live.revealed && /*#__PURE__*/React.createElement("button", {
     className: "btn btn--primary",
-    onClick: goLive
+    onClick: goLive,
+    disabled: uploading
   }, "\u25B6 Go live ", duration ? `(${duration}s)` : '(open)'), isLive && /*#__PURE__*/React.createElement("button", {
     className: "btn btn--primary",
     onClick: reveal

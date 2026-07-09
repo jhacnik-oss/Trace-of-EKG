@@ -32,11 +32,12 @@ function LessonMedia({ lesson, height = 240, color = 'var(--accent)', grid = tru
   return <EKGTrace lesson={lesson} width="100%" height={height} animate={animate} grid={grid} color={color} />;
 }
 
-// File -> data URL helper. Images are compressed to ≤800px / 70% JPEG to
-// stay well under Firestore's 1MB document limit. PDFs pass through as-is.
-function fileToDataURL(file) {
+// File -> data URL helper. Images are compressed by default to stay well under
+// Firestore's 1MB document limit. Storage-backed flows can preserve originals.
+function fileToDataURL(file, options = {}) {
+  const { preserveImageQuality = false } = options;
   return new Promise((resolve, reject) => {
-    if (file.type === 'application/pdf') {
+    if (file.type === 'application/pdf' || preserveImageQuality) {
       const r = new FileReader();
       r.onload = () => resolve(r.result);
       r.onerror = reject;

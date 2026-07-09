@@ -699,19 +699,22 @@ function DraftEditForm({ draft: initialDraft, state, onSave, onCancel }) {
     setUploading(true);
     setUploadError('');
     try {
-      const data = await fileToDataURL(file);
       const firebase = window.traceFirebase;
       if (firebase?.enabled && firebase?.uploadDataUrl) {
+        const data = await fileToDataURL(file, { preserveImageQuality: true });
         const upload = await firebase.uploadDataUrl(data, file.name, 'lesson-media');
         if (file.type === 'application/pdf') {
           patch({ pdfUrl: upload.url, pdfData: null, imageData: null, imageUrl: '' });
         } else {
           patch({ imageUrl: upload.url, imageData: null, pdfData: null, pdfUrl: '' });
         }
-      } else if (file.type === 'application/pdf') {
-        patch({ pdfData: data, pdfUrl: '', imageData: null, imageUrl: '' });
       } else {
-        patch({ imageData: data, imageUrl: '', pdfData: null, pdfUrl: '' });
+        const data = await fileToDataURL(file);
+        if (file.type === 'application/pdf') {
+          patch({ pdfData: data, pdfUrl: '', imageData: null, imageUrl: '' });
+        } else {
+          patch({ imageData: data, imageUrl: '', pdfData: null, pdfUrl: '' });
+        }
       }
     } catch (error) {
       console.error('Admin draft media upload failed:', error);
@@ -760,7 +763,7 @@ function DraftEditForm({ draft: initialDraft, state, onSave, onCancel }) {
         <div className="admin__preview" style={{ marginBottom: 20 }}>
           <div className="hero__label">Draft preview</div>
           <div className="admin__previewframe">
-            <LessonMedia lesson={d} height={220} grid={true} color="var(--accent)" />
+            <LessonMedia lesson={d} height={360} grid={true} color="var(--accent)" />
           </div>
         </div>
       )}

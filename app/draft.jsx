@@ -107,19 +107,22 @@ function DraftPage({ state, setState, params }) {
     setUploading(true);
     setUploadError('');
     try {
-      const data = await fileToDataURL(file);
       const firebase = window.traceFirebase;
       if (firebase?.enabled && firebase?.uploadDataUrl) {
+        const data = await fileToDataURL(file, { preserveImageQuality: true });
         const upload = await firebase.uploadDataUrl(data, file.name, `guest-draft-media/${inviteId}`);
         if (file.type === 'application/pdf') {
           patch({ pdfUrl: upload.url, pdfData: null, imageData: null, imageUrl: '' });
         } else {
           patch({ imageUrl: upload.url, imageData: null, pdfData: null, pdfUrl: '' });
         }
-      } else if (file.type === 'application/pdf') {
-        patch({ pdfData: data, pdfUrl: '', imageData: null, imageUrl: '' });
       } else {
-        patch({ imageData: data, imageUrl: '', pdfData: null, pdfUrl: '' });
+        const data = await fileToDataURL(file);
+        if (file.type === 'application/pdf') {
+          patch({ pdfData: data, pdfUrl: '', imageData: null, imageUrl: '' });
+        } else {
+          patch({ imageData: data, imageUrl: '', pdfData: null, pdfUrl: '' });
+        }
       }
     } catch (error) {
       console.error('Draft media upload failed:', error);
